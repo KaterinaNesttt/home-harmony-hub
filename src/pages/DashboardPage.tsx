@@ -37,11 +37,14 @@ export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDele
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold">Привіт! 👋</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Привіт! 👋</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* Quick stats */}
