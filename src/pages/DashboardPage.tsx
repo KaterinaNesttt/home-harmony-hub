@@ -40,14 +40,22 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
 
   const toBuyCount = lists.reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0);
 
+  const initials = (profile?.display_name || '?').slice(0, 2).toUpperCase();
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Привіт! 👋</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10">
+            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Avatar" />}
+            <AvatarFallback className="text-sm font-bold">{initials}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-bold text-base">{profile?.display_name || 'Користувач'}</p>
+            <p className="text-muted-foreground text-xs">
+              {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
         </div>
         <button
           onClick={toggle}
