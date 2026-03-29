@@ -26,7 +26,7 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Завантаження...</div>
       </div>
     );
@@ -42,7 +42,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <main className="max-w-lg mx-auto px-4 pt-6 pb-24">
         {tab === 'dashboard' && (
           <DashboardPage

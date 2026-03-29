@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 
 interface AuthPageProps {
-  onAuth: (mode: 'login' | 'signup', email: string, password: string, name?: string) => Promise<{ error: any }>;
+  onAuth: (mode: 'login' | 'signup', email: string, password: string, name?: string) => Promise<{ error: unknown }>;
 }
 
 export function AuthPage({ onAuth }: AuthPageProps) {

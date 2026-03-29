@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 interface AccountPageProps {
   profile: { display_name: string; avatar_url: string | null } | null;
   email: string;
-  onUpdateProfile: (updates: { display_name?: string; avatar_url?: string }) => Promise<{ error: any }>;
-  onUploadAvatar: (file: File | Blob) => Promise<{ error: any; url: string | null }>;
+  onUpdateProfile: (updates: { display_name?: string; avatar_url?: string }) => Promise<{ error: unknown }>;
+  onUploadAvatar: (file: File | Blob) => Promise<{ error: unknown; url: string | null }>;
   onSignOut: () => void;
 }
 
