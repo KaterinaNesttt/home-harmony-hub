@@ -43,10 +43,10 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
   const initials = (profile?.display_name || '?').slice(0, 2).toUpperCase();
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
+        <div className="flex items-center gap-5">
+          <Avatar className="w-14 h-14">
             {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Avatar" />}
             <AvatarFallback className="text-sm font-bold">{initials}</AvatarFallback>
           </Avatar>
@@ -62,7 +62,7 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
           className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label="Перемикач теми"
         >
-          {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          {dark ? <Sun className="w-8 h-8" /> : <Moon className="w-8 h-8" />}
         </button>
       </div>
 
@@ -70,17 +70,17 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={onGoToTasks}
-          className="bg-card rounded-xl p-3 border border-border text-center hover:border-primary/30 transition-colors"
+          className="bg-card rounded-xl p-6 border border-border text-center hover:border-primary/30 transition-colors"
         >
-          <CheckSquare className="w-4 h-4 mx-auto text-primary mb-1" />
+          <CheckSquare className="w-6 h-6 mx-auto text-primary mb-1" />
           <p className="text-lg font-bold">{todayTasks.length}</p>
           <p className="text-[10px] text-muted-foreground">Сьогодні</p>
         </button>
         <button
           onClick={onGoToShopping}
-          className="bg-card rounded-xl p-3 border border-border text-center hover:border-primary/30 transition-colors"
+          className="bg-card rounded-xl p-6 border border-border text-center hover:border-primary/30 transition-colors"
         >
-          <ShoppingCart className="w-4 h-4 mx-auto text-accent mb-1" />
+          <ShoppingCart className="w-6 h-6 mx-auto text-accent mb-1" />
           <p className="text-lg font-bold">{toBuyCount}</p>
           <p className="text-[10px] text-muted-foreground">Купити</p>
         </button>

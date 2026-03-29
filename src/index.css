@@ -56,7 +56,7 @@
 
     --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
 
-    --background-image: url('./assets/bglight.png');
+    --background-image: url('./assets/1l.jpg');
   }
 
   .dark {
@@ -97,7 +97,7 @@
     --sidebar-border: 220 15% 22%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --background-image: url('./assets/bgdark.png');
+    --background-image: url('./assets/1d.jpg');
   }
 }
 
