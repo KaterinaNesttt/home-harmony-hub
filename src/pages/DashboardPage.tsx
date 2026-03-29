@@ -1,0 +1,104 @@
+import { Plus, CheckSquare, ShoppingCart, TrendingUp } from 'lucide-react';
+import { TaskCard } from '@/components/TaskCard';
+import { ShoppingListCard } from '@/components/ShoppingListCard';
+import type { Task, ShoppingList, ShoppingItem } from '@/types';
+
+interface DashboardPageProps {
+  tasks: Task[];
+  lists: ShoppingList[];
+  onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onToggleItem: (listId: string, itemId: string) => void;
+  onDeleteItem: (listId: string, itemId: string) => void;
+  onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
+  onAddTask: () => void;
+  onAddList: () => void;
+}
+
+export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddList }: DashboardPageProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayTasks = tasks.filter(t => {
+    if (t.status === 'done') return false;
+    if (!t.deadline) return false;
+    const d = new Date(t.deadline);
+    return d >= today && d < tomorrow;
+  });
+
+  const pinnedTasks = tasks.filter(t => t.pinned && t.status !== 'done');
+  const displayTasks = [...new Map([...pinnedTasks, ...todayTasks].map(t => [t.id, t])).values()].slice(0, 5);
+  const activeLists = lists.filter(l => l.type === 'daily' || l.pinned).slice(0, 2);
+
+  const doneCount = tasks.filter(t => t.status === 'done').length;
+  const totalCount = tasks.length;
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold">Привіт! 👋</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-card rounded-xl p-3 border border-border text-center">
+          <CheckSquare className="w-4 h-4 mx-auto text-primary mb-1" />
+          <p className="text-lg font-bold">{todayTasks.length}</p>
+          <p className="text-[10px] text-muted-foreground">Сьогодні</p>
+        </div>
+        <div className="bg-card rounded-xl p-3 border border-border text-center">
+          <TrendingUp className="w-4 h-4 mx-auto text-status-done mb-1" />
+          <p className="text-lg font-bold">{doneCount}/{totalCount}</p>
+          <p className="text-[10px] text-muted-foreground">Виконано</p>
+        </div>
+        <div className="bg-card rounded-xl p-3 border border-border text-center">
+          <ShoppingCart className="w-4 h-4 mx-auto text-accent mb-1" />
+          <p className="text-lg font-bold">{lists.reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0)}</p>
+          <p className="text-[10px] text-muted-foreground">Купити</p>
+        </div>
+      </div>
+
+      {/* Quick add */}
+      <div className="flex gap-2">
+        <button onClick={onAddTask} className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl p-3 font-medium text-sm hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Задача
+        </button>
+        <button onClick={onAddList} className="flex-1 flex items-center justify-center gap-2 bg-accent text-accent-foreground rounded-xl p-3 font-medium text-sm hover:opacity-90 transition-opacity">
+          <Plus className="w-4 h-4" /> Список
+        </button>
+      </div>
+
+      {/* Today's tasks */}
+      {displayTasks.length > 0 && (
+        <section>
+          <h2 className="font-semibold text-sm text-muted-foreground mb-3">ЗАДАЧІ НА СЬОГОДНІ</h2>
+          <div className="space-y-2">
+            {displayTasks.map(task => (
+              <TaskCard key={task.id} task={task}
+                onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Active shopping */}
+      {activeLists.length > 0 && (
+        <section>
+          <h2 className="font-semibold text-sm text-muted-foreground mb-3">АКТИВНІ СПИСКИ</h2>
+          <div className="space-y-3">
+            {activeLists.map(list => (
+              <ShoppingListCard key={list.id} list={list}
+                onToggleItem={itemId => onToggleItem(list.id, itemId)}
+                onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
+                onAddItem={item => onAddItem(list.id, item)} />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
