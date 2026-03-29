@@ -74,19 +74,6 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
         ))}
       </div>
 
-      {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button onClick={() => setFilterCategory('all')}
-          className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all ${
-            filterCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>Всі</button>
-        {CATEGORIES.map(c => (
-          <button key={c} onClick={() => setFilterCategory(c)}
-            className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all ${
-              filterCategory === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}>{c}</button>
-        ))}
-      </div>
 
       {/* Task list */}
       <div className="space-y-2">
