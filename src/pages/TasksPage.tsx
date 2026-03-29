@@ -23,25 +23,15 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
 
-  let filtered = tasks;
-  if (filterCategory !== 'all') {
-    filtered = filtered.filter(t => t.category === filterCategory);
-  }
-
   const pinnedFirst = (arr: Task[]) => [...arr].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   let displayed: Task[];
   switch (view) {
-    case 'today':
-      displayed = pinnedFirst(filtered.filter(t => {
-        if (t.status === 'done') return false;
-        if (!t.deadline) return true;
-        const d = new Date(t.deadline);
-        return d <= tomorrow;
-      }));
+    case 'all':
+      displayed = pinnedFirst(tasks.filter(t => t.status !== 'done'));
       break;
     case 'upcoming':
-      displayed = pinnedFirst(filtered.filter(t => {
+      displayed = pinnedFirst(tasks.filter(t => {
         if (t.status === 'done') return false;
         if (!t.deadline) return false;
         const d = new Date(t.deadline);
@@ -49,14 +39,14 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
       }));
       break;
     case 'done':
-      displayed = filtered.filter(t => t.status === 'done').sort((a, b) =>
+      displayed = tasks.filter(t => t.status === 'done').sort((a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
       break;
   }
 
   const views: { id: TaskView; label: string }[] = [
-    { id: 'today', label: 'Сьогодні' },
+    { id: 'all', label: 'Усі' },
     { id: 'upcoming', label: 'Найближчі' },
     { id: 'done', label: 'Виконані' },
   ];
