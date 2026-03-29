@@ -1,12 +1,14 @@
 import { Plus, CheckSquare, ShoppingCart, Moon, Sun } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useTheme } from '@/hooks/useTheme';
 import type { Task, ShoppingList, ShoppingItem } from '@/types';
 
 interface DashboardPageProps {
   tasks: Task[];
   lists: ShoppingList[];
+  profile: { display_name: string; avatar_url: string | null } | null;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
@@ -14,9 +16,10 @@ interface DashboardPageProps {
   onAddTask: () => void;
   onAddToList: () => void;
   onGoToTasks: () => void;
+  onGoToShopping: () => void;
 }
 
-export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks }: DashboardPageProps) {
+export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks, onGoToShopping }: DashboardPageProps) {
   const { dark, toggle } = useTheme();
 
   const today = new Date();
@@ -37,14 +40,22 @@ export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDele
 
   const toBuyCount = lists.reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0);
 
+  const initials = (profile?.display_name || '?').slice(0, 2).toUpperCase();
+
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Привіт! 👋</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10">
+            {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="Avatar" />}
+            <AvatarFallback className="text-sm font-bold">{initials}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-bold text-base">{profile?.display_name || 'Користувач'}</p>
+            <p className="text-muted-foreground text-xs">
+              {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
         </div>
         <button
           onClick={toggle}
@@ -65,11 +76,14 @@ export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDele
           <p className="text-lg font-bold">{todayTasks.length}</p>
           <p className="text-[10px] text-muted-foreground">Сьогодні</p>
         </button>
-        <div className="bg-card rounded-xl p-3 border border-border text-center">
+        <button
+          onClick={onGoToShopping}
+          className="bg-card rounded-xl p-3 border border-border text-center hover:border-primary/30 transition-colors"
+        >
           <ShoppingCart className="w-4 h-4 mx-auto text-accent mb-1" />
           <p className="text-lg font-bold">{toBuyCount}</p>
           <p className="text-[10px] text-muted-foreground">Купити</p>
-        </div>
+        </button>
       </div>
 
       {/* Quick add */}

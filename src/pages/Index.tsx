@@ -47,11 +47,13 @@ const Index = () => {
         {tab === 'dashboard' && (
           <DashboardPage
             tasks={tasks} lists={lists}
+            profile={profile}
             onUpdateTask={updateTask}
             onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
             onAddTask={() => setShowAddTask(true)}
             onAddToList={() => setShowAddToList(true)}
             onGoToTasks={() => setTab('tasks')}
+            onGoToShopping={() => setTab('shopping')}
           />
         )}
         {tab === 'tasks' && (

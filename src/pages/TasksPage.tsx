@@ -4,7 +4,7 @@ import { TaskCard } from '@/components/TaskCard';
 import type { Task } from '@/types';
 import { CATEGORIES } from '@/types';
 
-type TaskView = 'today' | 'upcoming' | 'done';
+type TaskView = 'all' | 'upcoming' | 'done';
 
 interface TasksPageProps {
   tasks: Task[];
@@ -14,8 +14,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: TasksPageProps) {
-  const [view, setView] = useState<TaskView>('today');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [view, setView] = useState<TaskView>('all');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -24,25 +23,15 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
 
-  let filtered = tasks;
-  if (filterCategory !== 'all') {
-    filtered = filtered.filter(t => t.category === filterCategory);
-  }
-
   const pinnedFirst = (arr: Task[]) => [...arr].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   let displayed: Task[];
   switch (view) {
-    case 'today':
-      displayed = pinnedFirst(filtered.filter(t => {
-        if (t.status === 'done') return false;
-        if (!t.deadline) return true;
-        const d = new Date(t.deadline);
-        return d <= tomorrow;
-      }));
+    case 'all':
+      displayed = pinnedFirst(tasks.filter(t => t.status !== 'done'));
       break;
     case 'upcoming':
-      displayed = pinnedFirst(filtered.filter(t => {
+      displayed = pinnedFirst(tasks.filter(t => {
         if (t.status === 'done') return false;
         if (!t.deadline) return false;
         const d = new Date(t.deadline);
@@ -50,14 +39,14 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
       }));
       break;
     case 'done':
-      displayed = filtered.filter(t => t.status === 'done').sort((a, b) =>
+      displayed = tasks.filter(t => t.status === 'done').sort((a, b) =>
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
       break;
   }
 
   const views: { id: TaskView; label: string }[] = [
-    { id: 'today', label: 'Сьогодні' },
+    { id: 'all', label: 'Усі' },
     { id: 'upcoming', label: 'Найближчі' },
     { id: 'done', label: 'Виконані' },
   ];
@@ -85,19 +74,6 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
         ))}
       </div>
 
-      {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <button onClick={() => setFilterCategory('all')}
-          className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all ${
-            filterCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-          }`}>Всі</button>
-        {CATEGORIES.map(c => (
-          <button key={c} onClick={() => setFilterCategory(c)}
-            className={`text-xs px-3 py-1.5 rounded-full whitespace-nowrap transition-all ${
-              filterCategory === c ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}>{c}</button>
-        ))}
-      </div>
 
       {/* Task list */}
       <div className="space-y-2">
