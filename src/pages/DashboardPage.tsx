@@ -76,11 +76,14 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
           <p className="text-lg font-bold">{todayTasks.length}</p>
           <p className="text-[10px] text-muted-foreground">Сьогодні</p>
         </button>
-        <div className="bg-card rounded-xl p-3 border border-border text-center">
+        <button
+          onClick={onGoToShopping}
+          className="bg-card rounded-xl p-3 border border-border text-center hover:border-primary/30 transition-colors"
+        >
           <ShoppingCart className="w-4 h-4 mx-auto text-accent mb-1" />
           <p className="text-lg font-bold">{toBuyCount}</p>
           <p className="text-[10px] text-muted-foreground">Купити</p>
-        </div>
+        </button>
       </div>
 
       {/* Quick add */}
