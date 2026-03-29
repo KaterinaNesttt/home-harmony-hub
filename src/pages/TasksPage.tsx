@@ -36,7 +36,7 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
     case 'today':
       displayed = pinnedFirst(filtered.filter(t => {
         if (t.status === 'done') return false;
-        if (!t.deadline) return t.status !== 'done';
+        if (!t.deadline) return true;
         const d = new Date(t.deadline);
         return d <= tomorrow;
       }));
