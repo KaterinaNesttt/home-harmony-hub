@@ -14,8 +14,7 @@ interface TasksPageProps {
 }
 
 export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: TasksPageProps) {
-  const [view, setView] = useState<TaskView>('today');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [view, setView] = useState<TaskView>('all');
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
