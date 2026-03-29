@@ -1,6 +1,7 @@
-import { Plus, CheckSquare, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Plus, CheckSquare, ShoppingCart, TrendingUp, Moon, Sun } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
+import { useTheme } from '@/hooks/useTheme';
 import type { Task, ShoppingList, ShoppingItem } from '@/types';
 
 interface DashboardPageProps {
