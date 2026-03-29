@@ -1,6 +1,7 @@
-import { Plus, CheckSquare, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Plus, CheckSquare, ShoppingCart, TrendingUp, Moon, Sun } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
+import { useTheme } from '@/hooks/useTheme';
 import type { Task, ShoppingList, ShoppingItem } from '@/types';
 
 interface DashboardPageProps {
@@ -15,6 +16,18 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddList }: DashboardPageProps) {
+  const { dark, toggle } = useTheme();
+
+  const ThemeToggle = () => (
+    <button
+      onClick={toggle}
+      className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
+      aria-label="Перемикач теми"
+    >
+      {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    </button>
+  );
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -36,11 +49,14 @@ export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDele
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold">Привіт! 👋</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Привіт! 👋</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {today.toLocaleDateString('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <ThemeToggle />
       </div>
 
       {/* Quick stats */}
