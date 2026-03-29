@@ -4,7 +4,7 @@ import { TaskCard } from '@/components/TaskCard';
 import type { Task } from '@/types';
 import { CATEGORIES } from '@/types';
 
-type TaskView = 'today' | 'upcoming' | 'done';
+type TaskView = 'all' | 'upcoming' | 'done';
 
 interface TasksPageProps {
   tasks: Task[];
