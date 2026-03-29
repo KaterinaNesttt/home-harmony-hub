@@ -2,7 +2,7 @@ export type TaskStatus = 'unseen' | 'seen' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type Assignee = 'me' | 'partner' | 'both';
 export type AccessType = 'shared' | 'private';
-export type ShoppingListType = 'daily' | 'global';
+export type ShoppingListType = 'daily' | 'global' | 'wishlist';
 
 export const CATEGORIES = ['Дім', 'Робота', 'Особисте', 'Фінанси', 'Здоров\'я', 'Інше'] as const;
 export type Category = typeof CATEGORIES[number];

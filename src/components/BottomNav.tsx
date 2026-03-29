@@ -1,7 +1,7 @@
-import { Home, CheckSquare, ShoppingCart, Search } from 'lucide-react';
+import { Home, CheckSquare, ShoppingCart, Search, UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search';
+type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search' | 'account';
 
 interface BottomNavProps {
   active: Tab;
@@ -13,6 +13,7 @@ const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
   { id: 'tasks', label: 'Задачі', icon: CheckSquare },
   { id: 'shopping', label: 'Покупки', icon: ShoppingCart },
   { id: 'search', label: 'Пошук', icon: Search },
+  { id: 'account', label: 'Акаунт', icon: UserCircle },
 ];
 
 export function BottomNav({ active, onChange }: BottomNavProps) {
@@ -24,7 +25,7 @@ export function BottomNav({ active, onChange }: BottomNavProps) {
             key={id}
             onClick={() => onChange(id)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-[64px]",
+              "flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-colors min-w-[56px]",
               active === id
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"

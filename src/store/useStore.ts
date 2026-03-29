@@ -39,6 +39,13 @@ const SAMPLE_LISTS: ShoppingList[] = [
       { id: generateId(), name: 'Порошок для прання', quantity: '1', bought: false, url: 'https://example.com', note: 'Бренд X' },
     ],
   },
+  {
+    id: generateId(), title: 'Хотєлки', type: 'wishlist' as const, category: 'Особисте', access: 'shared', pinned: false,
+    createdAt: new Date().toISOString(),
+    items: [
+      { id: generateId(), name: 'Бездротові навушники', quantity: '1', bought: false, url: 'https://example.com/headphones', note: 'Sony WH-1000XM5' },
+    ],
+  },
 ];
 
 export function useTaskStore() {
