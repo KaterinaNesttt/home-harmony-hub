@@ -73,11 +73,11 @@ export function useAuth() {
     return { error };
   };
 
-  const uploadAvatar = async (file: File) => {
+  const uploadAvatar = async (file: File | Blob) => {
     if (!user) return { error: new Error('Not authenticated'), url: null };
-    const ext = file.name.split('.').pop();
+    const ext = file instanceof File ? file.name.split('.').pop() : 'png';
     const path = `${user.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type || 'image/png' });
     if (error) return { error, url: null };
     const { data } = supabase.storage.from('avatars').getPublicUrl(path);
     const url = data.publicUrl + '?t=' + Date.now();
