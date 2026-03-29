@@ -16,6 +16,18 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddList }: DashboardPageProps) {
+  const { dark, toggle } = useTheme();
+
+  const ThemeToggle = () => (
+    <button
+      onClick={toggle}
+      className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
+      aria-label="Перемикач теми"
+    >
+      {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    </button>
+  );
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
