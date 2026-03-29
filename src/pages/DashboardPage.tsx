@@ -19,7 +19,7 @@ interface DashboardPageProps {
   onGoToShopping: () => void;
 }
 
-export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks }: DashboardPageProps) {
+export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks, onGoToShopping }: DashboardPageProps) {
   const { dark, toggle } = useTheme();
 
   const today = new Date();
