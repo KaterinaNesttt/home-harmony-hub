@@ -1,12 +1,14 @@
 import { Plus, CheckSquare, ShoppingCart, Moon, Sun } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useTheme } from '@/hooks/useTheme';
 import type { Task, ShoppingList, ShoppingItem } from '@/types';
 
 interface DashboardPageProps {
   tasks: Task[];
   lists: ShoppingList[];
+  profile: { display_name: string; avatar_url: string | null } | null;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
@@ -14,6 +16,7 @@ interface DashboardPageProps {
   onAddTask: () => void;
   onAddToList: () => void;
   onGoToTasks: () => void;
+  onGoToShopping: () => void;
 }
 
 export function DashboardPage({ tasks, lists, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks }: DashboardPageProps) {
