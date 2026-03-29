@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
 import type { ShoppingList, ShoppingItem } from '@/types';
 
-type ListFilter = 'all' | 'daily' | 'global';
+type ListFilter = 'all' | 'daily' | 'global' | 'wishlist';
 
 interface ShoppingPageProps {
   lists: ShoppingList[];
@@ -14,15 +14,16 @@ interface ShoppingPageProps {
 }
 
 export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem }: ShoppingPageProps) {
-  const [filter, setFilter] = useState<ListFilter>('all');
+  const [filter, setFilter] = useState<ListFilter>('daily');
 
   const filtered = filter === 'all' ? lists : lists.filter(l => l.type === filter);
   const sorted = [...filtered].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   const filters: { id: ListFilter; label: string }[] = [
     { id: 'all', label: 'Всі' },
-    { id: 'daily', label: 'На день' },
-    { id: 'global', label: 'Глобальні' },
+    { id: 'daily', label: 'Сьогодні' },
+    { id: 'global', label: 'Майбутні' },
+    { id: 'wishlist', label: 'Хотєлки' },
   ];
 
   return (

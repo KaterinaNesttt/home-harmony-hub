@@ -40,8 +40,9 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
             <Select value={type} onValueChange={v => setType(v as ShoppingListType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">📅 На день</SelectItem>
-                <SelectItem value="global">🌐 Глобальний</SelectItem>
+                <SelectItem value="daily">📅 Сьогодні</SelectItem>
+                <SelectItem value="global">📦 Майбутні</SelectItem>
+                <SelectItem value="wishlist">💫 Хотєлки</SelectItem>
               </SelectContent>
             </Select>
             <Select value={category} onValueChange={v => setCategory(v as Category)}>
