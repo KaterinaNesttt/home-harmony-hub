@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1f2e"/><stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8C060"/><stop offset="100%" stop-color="#B08820"/>
+    </linearGradient>
+    <linearGradient id="gs" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.15"/><stop offset="100%" stop-color="white" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#D4A017" flood-opacity="0.4"/></filter>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <rect width="128" height="128" rx="28" fill="url(#gs)"/>
+  <rect x="1.5" y="1.5" width="125" height="125" rx="27" fill="none" stroke="#D4A017" stroke-width="1" stroke-opacity="0.3"/>
+  <g filter="url(#sh)">
+    <ellipse cx="64" cy="98" rx="28" ry="5" fill="#000" fill-opacity="0.3"/>
+    <rect x="36" y="61" width="55" height="38" rx="3" fill="url(#wall)"/>
+    <polygon points="91,61 100,54 100,84 91,92" fill="#9A7418"/>
+    <polygon points="30,63 64,33 98,63" fill="#FFE088"/>
+    <polygon points="98,63 107,55 73,25 64,33" fill="#A07010"/>
+    <rect x="55" y="75" width="19" height="24" rx="3" fill="#141820"/>
+    <line x1="64.5" y1="76" x2="64.5" y2="99" stroke="#D4A017" stroke-width="0.7" stroke-opacity="0.4"/>
+    <circle cx="59" cy="87" r="1.5" fill="#D4A017"/>
+    <rect x="38" y="67" width="16" height="13" rx="2" fill="#162030"/>
+    <rect x="79" y="67" width="16" height="13" rx="2" fill="#162030"/>
+  </g>
+</svg>

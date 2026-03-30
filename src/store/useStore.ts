@@ -1,95 +1,128 @@
-import { useState, useCallback } from 'react';
-import type { Task, ShoppingList, ShoppingItem, Category, TaskStatus, TaskPriority, Assignee, AccessType, ShoppingListType } from '@/types';
+import { useState, useCallback, useEffect } from 'react';
+import { cfTasks, cfLists, type CFTask, type CFList, type CFItem } from '@/integrations/cloudflare/client';
+import type { Task, ShoppingList, ShoppingItem } from '@/types';
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+function cfTaskToTask(t: CFTask): Task {
+  return {
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    status: t.status,
+    priority: t.priority,
+    deadline: t.deadline,
+    assignee: t.assignee,
+    category: t.category as Task['category'],
+    access: t.access,
+    pinned: t.pinned,
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+  };
+}
+
+function cfListToList(l: CFList): ShoppingList {
+  return {
+    id: l.id,
+    title: l.title,
+    type: l.type,
+    category: l.category as ShoppingList['category'],
+    access: l.access,
+    pinned: l.pinned,
+    createdAt: l.created_at,
+    items: l.items.map(i => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      bought: i.bought,
+      note: i.note,
+      url: i.url,
+    })),
+  };
+}
 
 const generateId = () => crypto.randomUUID();
 
-const SAMPLE_TASKS: Task[] = [
-  {
-    id: generateId(), title: 'Прибрати кухню', description: 'Помити посуд, протерти стіл', status: 'unseen',
-    priority: 'medium', deadline: new Date().toISOString(), assignee: 'me', category: 'Дім',
-    access: 'shared', pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(), title: 'Купити продукти', status: 'seen', priority: 'high',
-    deadline: new Date().toISOString(), assignee: 'partner', category: 'Дім',
-    access: 'shared', pinned: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  },
-  {
-    id: generateId(), title: 'Оплатити комунальні', status: 'in_progress', priority: 'high',
-    deadline: new Date(Date.now() + 86400000 * 2).toISOString(), assignee: 'me', category: 'Фінанси',
-    access: 'shared', pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-  },
-];
+// ── Task store ────────────────────────────────────────────────────────────────
+export function useTaskStore(authenticated: boolean) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [synced, setSynced] = useState(false);
 
-const SAMPLE_LISTS: ShoppingList[] = [
-  {
-    id: generateId(), title: 'Продукти на сьогодні', type: 'daily', category: 'Дім', access: 'shared', pinned: true,
-    createdAt: new Date().toISOString(),
-    items: [
-      { id: generateId(), name: 'Молоко', quantity: '1 л', bought: false },
-      { id: generateId(), name: 'Хліб', quantity: '1 шт', bought: true },
-      { id: generateId(), name: 'Яйця', quantity: '10 шт', bought: false },
-    ],
-  },
-  {
-    id: generateId(), title: 'Побутова хімія', type: 'global', category: 'Дім', access: 'shared', pinned: false,
-    createdAt: new Date().toISOString(),
-    items: [
-      { id: generateId(), name: 'Засіб для посуду', quantity: '1', bought: false },
-      { id: generateId(), name: 'Порошок для прання', quantity: '1', bought: false, url: 'https://example.com', note: 'Бренд X' },
-    ],
-  },
-  {
-    id: generateId(), title: 'Хотєлки', type: 'wishlist' as const, category: 'Особисте', access: 'shared', pinned: false,
-    createdAt: new Date().toISOString(),
-    items: [
-      { id: generateId(), name: 'Бездротові навушники', quantity: '1', bought: false, url: 'https://example.com/headphones', note: 'Sony WH-1000XM5' },
-    ],
-  },
-];
+  useEffect(() => {
+    if (!authenticated) { setTasks([]); setSynced(false); return; }
+    cfTasks.list().then(({ data }) => {
+      if (data) { setTasks(data.map(cfTaskToTask)); setSynced(true); }
+    });
+  }, [authenticated]);
 
-export function useTaskStore() {
-  const [tasks, setTasks] = useState<Task[]>(SAMPLE_TASKS);
-
-  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
-    setTasks(prev => [{ ...task, id: generateId(), createdAt: now, updatedAt: now }, ...prev]);
+    const tempId = generateId();
+    const optimistic: Task = { ...task, id: tempId, createdAt: now, updatedAt: now };
+    setTasks(prev => [optimistic, ...prev]);
+    const { data } = await cfTasks.create({ ...task, status: task.status as CFTask['status'], priority: task.priority as CFTask['priority'], assignee: task.assignee as CFTask['assignee'], access: task.access as CFTask['access'] });
+    if (data) setTasks(prev => prev.map(t => t.id === tempId ? cfTaskToTask(data) : t));
   }, []);
 
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => {
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates, updatedAt: new Date().toISOString() } : t));
+    await cfTasks.update(id, updates as Partial<CFTask>);
   }, []);
 
-  const deleteTask = useCallback((id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    await cfTasks.remove(id);
   }, []);
 
-  return { tasks, addTask, updateTask, deleteTask };
+  return { tasks, synced, addTask, updateTask, deleteTask };
 }
 
-export function useShoppingStore() {
-  const [lists, setLists] = useState<ShoppingList[]>(SAMPLE_LISTS);
+// ── Shopping store ────────────────────────────────────────────────────────────
+export function useShoppingStore(authenticated: boolean) {
+  const [lists, setLists] = useState<ShoppingList[]>([]);
 
-  const addList = useCallback((list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>) => {
-    setLists(prev => [{ ...list, id: generateId(), createdAt: new Date().toISOString(), items: [] }, ...prev]);
+  useEffect(() => {
+    if (!authenticated) { setLists([]); return; }
+    cfLists.list().then(({ data }) => { if (data) setLists(data.map(cfListToList)); });
+  }, [authenticated]);
+
+  const addList = useCallback(async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>) => {
+    const tempId = generateId();
+    const optimistic: ShoppingList = { ...list, id: tempId, createdAt: new Date().toISOString(), items: [] };
+    setLists(prev => [optimistic, ...prev]);
+    const { data } = await cfLists.create({ ...list, type: list.type as CFList['type'], access: list.access as CFList['access'] });
+    if (data) setLists(prev => prev.map(l => l.id === tempId ? cfListToList(data) : l));
   }, []);
 
-  const deleteList = useCallback((id: string) => {
+  const deleteList = useCallback(async (id: string) => {
     setLists(prev => prev.filter(l => l.id !== id));
+    await cfLists.remove(id);
   }, []);
 
-  const addItem = useCallback((listId: string, item: Omit<ShoppingItem, 'id'>) => {
-    setLists(prev => prev.map(l => l.id === listId ? { ...l, items: [...l.items, { ...item, id: generateId() }] } : l));
+  const addItem = useCallback(async (listId: string, item: Omit<ShoppingItem, 'id'>) => {
+    const tempId = generateId();
+    setLists(prev => prev.map(l => l.id === listId ? { ...l, items: [...l.items, { ...item, id: tempId }] } : l));
+    const { data } = await cfLists.addItem(listId, item);
+    if (data) {
+      setLists(prev => prev.map(l => l.id === listId ? {
+        ...l, items: l.items.map(i => i.id === tempId ? { id: data.id, name: data.name, quantity: data.quantity, bought: data.bought, note: data.note, url: data.url } : i)
+      } : l));
+    }
   }, []);
 
-  const toggleItem = useCallback((listId: string, itemId: string) => {
+  const toggleItem = useCallback(async (listId: string, itemId: string) => {
+    let newBought = false;
     setLists(prev => prev.map(l => l.id === listId ? {
-      ...l, items: l.items.map(i => i.id === itemId ? { ...i, bought: !i.bought } : i)
+      ...l, items: l.items.map(i => {
+        if (i.id === itemId) { newBought = !i.bought; return { ...i, bought: !i.bought }; }
+        return i;
+      })
     } : l));
+    await cfLists.toggleItem(listId, itemId, newBought);
   }, []);
 
-  const deleteItem = useCallback((listId: string, itemId: string) => {
+  const deleteItem = useCallback(async (listId: string, itemId: string) => {
     setLists(prev => prev.map(l => l.id === listId ? { ...l, items: l.items.filter(i => i.id !== itemId) } : l));
+    await cfLists.deleteItem(listId, itemId);
   }, []);
 
   return { lists, addList, deleteList, addItem, toggleItem, deleteItem };

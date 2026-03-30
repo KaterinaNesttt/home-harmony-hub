@@ -1,0 +1,11 @@
+name = "home-harmony-hub"
+main = "worker/index.ts"
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "home-harmony-hub"
+database_id = "77b045c3-fe39-42d2-b279-9d02659c359a"
+
+[vars]
+JWT_SECRET = "change-me-in-dashboard"

@@ -13,48 +13,72 @@ interface ShoppingPageProps {
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
 }
 
+const filters: { id: ListFilter; label: string; emoji: string }[] = [
+  { id: 'all',      label: 'Всі',     emoji: '📋' },
+  { id: 'daily',    label: 'Сьогодні', emoji: '📅' },
+  { id: 'global',   label: 'Майбутні', emoji: '📦' },
+  { id: 'wishlist', label: 'Хотєлки', emoji: '💫' },
+];
+
 export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem }: ShoppingPageProps) {
   const [filter, setFilter] = useState<ListFilter>('daily');
 
   const filtered = filter === 'all' ? lists : lists.filter(l => l.type === filter);
-  const sorted = [...filtered].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+  const sorted = [...filtered].sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0));
 
-  const filters: { id: ListFilter; label: string }[] = [
-    { id: 'all', label: 'Всі' },
-    { id: 'daily', label: 'Сьогодні' },
-    { id: 'global', label: 'Майбутні' },
-    { id: 'wishlist', label: 'Хотєлки' },
-  ];
+  const totalToBuy = lists.reduce((s,l) => s + l.items.filter(i=>!i.bought).length, 0);
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Покупки</h1>
-        <button onClick={onAddList} className="bg-accent text-accent-foreground rounded-full p-2 hover:opacity-90 transition-opacity">
-          <Plus className="w-5 h-5" />
+        <div>
+          <h1 className="text-2xl font-bold font-display">Покупки</h1>
+          <p className="text-sm text-muted-foreground">{totalToBuy} товарів до покупки</p>
+        </div>
+        <button
+          onClick={onAddList}
+          className="w-12 h-12 rounded-2xl glass border-accent/20 flex items-center justify-center text-accent tap-scale card-hover shadow-glass"
+        >
+          <Plus className="w-6 h-6" strokeWidth={2.5} />
         </button>
       </div>
 
-      <div className="flex gap-1 bg-muted rounded-xl p-1">
+      {/* Filter tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
         {filters.map(f => (
-          <button key={f.id} onClick={() => setFilter(f.id)}
-            className={`flex-1 text-sm font-medium py-2 rounded-lg transition-all ${
-              filter === f.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
-            }`}>{f.label}</button>
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2.5 rounded-xl transition-all tap-scale ${
+              filter === f.id
+                ? 'bg-accent text-accent-foreground shadow-[0_4px_16px_hsla(217,80%,60%,0.3)]'
+                : 'glass text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span>{f.emoji}</span>
+            {f.label}
+          </button>
         ))}
       </div>
 
-      <div className="space-y-3">
+      {/* Lists */}
+      <div className="space-y-3 stagger">
         {sorted.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-sm">Немає списків</p>
+          <div className="glass rounded-2xl p-12 text-center animate-scale-in">
+            <div className="text-4xl mb-3 animate-float">🛒</div>
+            <p className="font-bold text-foreground">Немає списків</p>
+            <p className="text-sm text-muted-foreground mt-1">Натисніть + щоб створити список</p>
           </div>
         ) : (
           sorted.map(list => (
-            <ShoppingListCard key={list.id} list={list}
+            <ShoppingListCard
+              key={list.id}
+              list={list}
               onToggleItem={itemId => onToggleItem(list.id, itemId)}
               onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
-              onAddItem={item => onAddItem(list.id, item)} />
+              onAddItem={item => onAddItem(list.id, item)}
+            />
           ))
         )}
       </div>

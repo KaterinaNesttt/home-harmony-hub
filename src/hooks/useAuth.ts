@@ -1,89 +1,63 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
-
-interface Profile {
-  id: string;
-  display_name: string;
-  avatar_url: string | null;
-}
+import { cfAuth, type CFUser } from '@/integrations/cloudflare/client';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<CFUser | null>(() => cfAuth.getStoredUser());
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (data) setProfile(data as Profile);
+  useEffect(() => {
+    const stored = cfAuth.getStoredUser();
+    if (stored) {
+      setUser(stored);
+      // silently refresh profile
+      cfAuth.refreshProfile().then(u => { if (u) setUser(u); });
+    }
+    setLoading(false);
   }, []);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        setTimeout(() => fetchProfile(session.user.id), 0);
-      } else {
-        setProfile(null);
-      }
-      setLoading(false);
+  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
+    const { user: u, error } = await cfAuth.signUp(email, password, displayName);
+    if (u) setUser(u);
+    return { error: error ? new Error(error) : null };
+  }, []);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { user: u, error } = await cfAuth.signIn(email, password);
+    if (u) setUser(u);
+    return { error: error ? new Error(error) : null };
+  }, []);
+
+  const signOut = useCallback(() => {
+    cfAuth.signOut();
+    setUser(null);
+  }, []);
+
+  const updateProfile = useCallback(async (updates: { display_name?: string; avatar_url?: string }) => {
+    const { data, error } = await cfAuth.updateProfile(updates);
+    if (data) setUser(data);
+    return { error: error ? new Error(error) : null };
+  }, []);
+
+  // Avatar: convert to base64 data URL and store in profile (no separate storage)
+  const uploadAvatar = useCallback(async (file: File | Blob): Promise<{ error: Error | null; url: string | null }> => {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const url = reader.result as string;
+        const { error } = await cfAuth.updateProfile({ avatar_url: url });
+        if (error) resolve({ error: new Error(error), url: null });
+        else {
+          const updated = cfAuth.getStoredUser();
+          if (updated) setUser(updated);
+          resolve({ error: null, url });
+        }
+      };
+      reader.readAsDataURL(file);
     });
+  }, []);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      setLoading(false);
-    });
+  // profile shape for compatibility with existing components
+  const profile = user ? { display_name: user.display_name, avatar_url: user.avatar_url } : null;
 
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
-
-  const signUp = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: displayName } },
-    });
-    return { error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
-  const updateProfile = async (updates: Partial<Pick<Profile, 'display_name' | 'avatar_url'>>) => {
-    if (!user) return { error: new Error('Not authenticated') };
-    const { error } = await supabase
-      .from('profiles')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', user.id);
-    if (!error) await fetchProfile(user.id);
-    return { error };
-  };
-
-  const uploadAvatar = async (file: File | Blob) => {
-    if (!user) return { error: new Error('Not authenticated'), url: null };
-    const ext = file instanceof File ? file.name.split('.').pop() : 'png';
-    const path = `${user.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type || 'image/png' });
-    if (error) return { error, url: null };
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-    const url = data.publicUrl + '?t=' + Date.now();
-    await updateProfile({ avatar_url: url });
-    return { error: null, url };
-  };
-
-  return { user, session, profile, loading, signUp, signIn, signOut, updateProfile, uploadAvatar, fetchProfile };
+  return { user, profile, loading, signUp, signIn, signOut, updateProfile, uploadAvatar };
 }

@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ShoppingList, Category, AccessType, ShoppingListType } from '@/types';
 import { CATEGORIES } from '@/types';
@@ -28,38 +26,78 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/40 animate-fade-in" onClick={onClose}>
-      <div className="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">Новий список</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm" onClick={onClose}>
+      <div className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
+
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-2xl flex items-center justify-center text-xl">
+              🛒
+            </div>
+            <h2 className="text-xl font-bold font-display">Новий список</h2>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 glass rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground tap-scale">
+            <X className="w-5 h-5" />
+          </button>
         </div>
+
         <div className="space-y-4">
-          <Input placeholder="Назва списку" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+          <input
+            placeholder="Назва списку"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            autoFocus
+            className="w-full h-14 px-4 glass rounded-2xl text-base font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
+          />
+
           <div className="grid grid-cols-2 gap-3">
-            <Select value={type} onValueChange={v => setType(v as ShoppingListType)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Тип</label>
+              <Select value={type} onValueChange={v => setType(v as ShoppingListType)}>
+                <SelectTrigger className="h-12 rounded-xl glass border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">📅 Сьогодні</SelectItem>
+                  <SelectItem value="global">📦 Майбутні</SelectItem>
+                  <SelectItem value="wishlist">💫 Хотєлки</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Категорія</label>
+              <Select value={category} onValueChange={v => setCategory(v as Category)}>
+                <SelectTrigger className="h-12 rounded-xl glass border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Доступ</label>
+            <Select value={access} onValueChange={v => setAccess(v as AccessType)}>
+              <SelectTrigger className="h-12 rounded-xl glass border-border/50">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">📅 Сьогодні</SelectItem>
-                <SelectItem value="global">📦 Майбутні</SelectItem>
-                <SelectItem value="wishlist">💫 Хотєлки</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={category} onValueChange={v => setCategory(v as Category)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                <SelectItem value="shared">🤝 Спільний</SelectItem>
+                <SelectItem value="private">🔒 Приватний</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Select value={access} onValueChange={v => setAccess(v as AccessType)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="shared">🤝 Спільний</SelectItem>
-              <SelectItem value="private">🔒 Приватний</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={handleSubmit} className="w-full" disabled={!title.trim()}>Створити список</Button>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!title.trim()}
+            className="w-full h-14 rounded-2xl font-bold text-base tap-scale disabled:opacity-50 bg-accent text-accent-foreground shadow-[0_4px_20px_hsla(217,80%,60%,0.35)] hover:opacity-90 transition-all"
+          >
+            🛒 Створити список
+          </button>
         </div>
       </div>
     </div>
