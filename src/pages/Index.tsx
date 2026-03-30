@@ -13,6 +13,7 @@ import { AuthPage } from '@/pages/AuthPage';
 import { useTaskStore, useShoppingStore } from '@/store/useStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import type { ShoppingList } from '@/types';
 
 export type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search' | 'weather' | 'account';
 
@@ -21,18 +22,25 @@ const Index = () => {
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddList, setShowAddList] = useState(false);
   const [showAddToList, setShowAddToList] = useState(false);
-  const [prevTab, setPrevTab] = useState<Tab>('dashboard');
 
   const { user, profile, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
   const { lists, addList, addItem, toggleItem, deleteItem } = useShoppingStore(!!user);
   const { dark } = useTheme();
 
-  const changeTab = (t: Tab) => { setPrevTab(tab); setTab(t); };
+  const changeTab = (t: Tab) => setTab(t);
 
   useEffect(() => {
     document.documentElement.className = dark ? 'dark' : 'light';
   }, [dark]);
+
+  // addList wrapper that returns the new list id for AddToListDialog
+  const addListAndReturn = async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>): Promise<string> => {
+    await addList(list);
+    // After optimistic update, the new list will be first in the array
+    // We return a sentinel; AddToListDialog handles the fallback via lists prop update
+    return '';
+  };
 
   if (loading) {
     return (
@@ -42,10 +50,8 @@ const Index = () => {
           <div className="orb orb-3" /><div className="orb orb-4" />
         </div>
         <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-          <div className="relative w-16 h-16 animate-float">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center shadow-gold">
-              <span className="text-2xl">🏠</span>
-            </div>
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center shadow-gold animate-float">
+            <span className="text-2xl">🏠</span>
           </div>
           <p className="text-muted-foreground text-sm animate-pulse">Завантаження...</p>
         </div>
@@ -70,7 +76,6 @@ const Index = () => {
 
   return (
     <>
-      {/* Animated orb background */}
       <div className="orb-bg">
         <div className="orb orb-1" /><div className="orb orb-2" />
         <div className="orb orb-3" /><div className="orb orb-4" />
@@ -121,7 +126,13 @@ const Index = () => {
 
         <AddTaskDialog open={showAddTask} onClose={() => setShowAddTask(false)} onAdd={addTask} />
         <AddListDialog open={showAddList} onClose={() => setShowAddList(false)} onAdd={addList} />
-        <AddToListDialog open={showAddToList} onClose={() => setShowAddToList(false)} lists={lists} onAddItem={addItem} />
+        <AddToListDialog
+          open={showAddToList}
+          onClose={() => setShowAddToList(false)}
+          lists={lists}
+          onAddItem={addItem}
+          onAddList={addListAndReturn}
+        />
       </div>
     </>
   );
