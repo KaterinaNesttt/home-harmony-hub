@@ -4,6 +4,7 @@
   "description": "Спільний застосунок для домогосподарства: задачі, покупки, погода",
   "start_url": "/",
   "display": "standalone",
+  "viewport-fit": "cover",
   "background_color": "#0f1117",
   "theme_color": "#D4A017",
   "orientation": "portrait-primary",

@@ -56,7 +56,7 @@ const Index = () => {
             src={bgVideo}
           />
         </div>
-        <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-4 mt-[13px]">
+        <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-4 pt-[env(safe-area-inset-top)]">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center shadow-gold animate-float">
             <span className="text-2xl">🏠</span>
           </div>
@@ -79,7 +79,7 @@ const Index = () => {
             src={bgVideo}
           />
         </div>
-        <div className="relative z-10 mt-[13px]">
+        <div className="relative z-10 pt-[env(safe-area-inset-top)]">
           <AuthPage onAuth={async (mode, email, password, name) => {
             if (mode === 'signup') return signUp(email, password, name || '');
             return signIn(email, password);
@@ -102,7 +102,7 @@ const Index = () => {
         />
       </div>
 
-      <div className="relative z-10 min-h-screen mt-[13px]">
+      <div className="relative z-10 min-h-screen pt-[env(safe-area-inset-top)]">
         <main className="max-w-lg mx-auto px-4 pt-6 pb-28">
           {tab === 'dashboard' && (
             <DashboardPage
