@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import bgVideo from '@/assets/0331.mp4';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
@@ -13,7 +13,6 @@ import { WeatherPage } from '@/pages/WeatherPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { useTaskStore, useShoppingStore } from '@/store/useStore';
 import { useAuth } from '@/hooks/useAuth';
-import { useTheme } from '@/hooks/useTheme';
 import type { ShoppingList } from '@/types';
 
 export type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search' | 'weather' | 'account';
@@ -27,13 +26,8 @@ const Index = () => {
   const { user, profile, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
   const { lists, addList, addItem, toggleItem, deleteItem } = useShoppingStore(!!user);
-  const { dark } = useTheme();
 
   const changeTab = (t: Tab) => setTab(t);
-
-  useEffect(() => {
-    document.documentElement.className = dark ? 'dark' : 'light';
-  }, [dark]);
 
   // addList wrapper that returns the new list id for AddToListDialog
   const addListAndReturn = async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>): Promise<string> => {

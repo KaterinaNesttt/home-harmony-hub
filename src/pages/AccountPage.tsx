@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import {
-  Camera, LogOut, Download, Moon, Sun, User, CheckSquare,
-  ShoppingCart, Star, Shield, Bell, Palette, ChevronRight,
+  Camera, LogOut, Download, User, CheckSquare,
+  ShoppingCart, Star, Shield, Bell, ChevronRight,
   Smartphone, Copy, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { AvatarCropDialog } from '@/components/AvatarCropDialog';
 import { toast } from 'sonner';
-import { useTheme } from '@/hooks/useTheme';
 import { cn } from '@/lib/utils';
 
 interface AccountPageProps {
@@ -31,7 +30,6 @@ export function AccountPage({ profile, email, onUpdateProfile, onUploadAvatar, o
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [copiedStep, setCopiedStep] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const { dark, toggle } = useTheme();
 
   const handleSaveName = async () => {
     if (!name.trim()) return;
@@ -78,21 +76,7 @@ export function AccountPage({ profile, email, onUpdateProfile, onUploadAvatar, o
   return (
     <div className="space-y-5 animate-fade-in pb-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold font-display">Профіль</h1>
-        <button
-          onClick={toggle}
-          className={cn(
-            "w-12 h-12 rounded-2xl glass flex items-center justify-center tap-scale transition-all",
-            dark ? "text-yellow-400" : "text-slate-600"
-          )}
-        >
-          {dark
-            ? <Sun className="w-6 h-6 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-            : <Moon className="w-6 h-6" />
-          }
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold font-display">Профіль</h1>
 
       {/* Avatar + name card */}
       <div className="glass-strong rounded-3xl p-6 text-center animate-scale-in">
@@ -165,31 +149,6 @@ export function AccountPage({ profile, email, onUpdateProfile, onUploadAvatar, o
         <div className="px-4 py-3 border-b border-border/40">
           <h3 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Налаштування</h3>
         </div>
-
-        {/* Theme toggle */}
-        <button
-          onClick={toggle}
-          className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors tap-scale"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-              <Palette className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div className="text-left">
-              <p className="font-semibold text-sm">Тема оформлення</p>
-              <p className="text-xs text-muted-foreground">{dark ? 'Темна тема' : 'Світла тема'}</p>
-            </div>
-          </div>
-          <div className={cn(
-            "w-12 h-6 rounded-full transition-all relative",
-            dark ? "bg-primary" : "bg-muted"
-          )}>
-            <span className={cn(
-              "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all",
-              dark ? "left-6" : "left-0.5"
-            )} />
-          </div>
-        </button>
 
         <div className="border-t border-border/30">
           <button
