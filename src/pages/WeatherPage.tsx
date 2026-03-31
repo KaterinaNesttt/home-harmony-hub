@@ -83,20 +83,160 @@ function codeMap(wc: number): number {
 }
 
 // ── Clothing advice — female profile ────────────────────────────────────────
-// Rules:
-//   • No dresses / skirts ever
-//   • Shoes: sneakers (base), "тракторні" boots in winter
-//   • Autumn outerwear: coat OR leather jacket
-//   • Winter outerwear: winter jacket
+// Wardrobe: термобілизна, кофта, светр, гольф, футболка, джинси, жилетка тепла,
+//           теплі носки — плюс верхній одяг: куртка зимова/осіння, пальто, вітровка
+// Morning commute mode (weekdays 06:50–08:00):
+//   • Вихід з дому: 7:30–8:00, дорога ~15 хв
+//   • Повернення додому: 17:30
 // ─────────────────────────────────────────────────────────────────────────────
+
+function isMorningCommuteTime(): boolean {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 6=Sat
+  if (day === 0 || day === 6) return false; // weekends — off
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const totalMin = h * 60 + m;
+  return totalMin >= 6 * 60 + 50 && totalMin <= 8 * 60; // 06:50–08:00
+}
+
+interface CommuteAdvice {
+  morningOutdoor: string; // temp at departure ~7:30–8:00
+  eveningOutdoor: string; // temp at return ~17:30
+  layering: string[];     // specific layering tips
+  umbrellaNote: string;
+}
+
+function getMorningCommuteAdvice(weather: WeatherData): CommuteAdvice {
+  const { temp, feels_like, humidity, wind_speed, code, hourly } = weather;
+  const isRain = code >= 200 && code < 600;
+  const isSnow = code >= 600 && code < 700;
+  const isWind = wind_speed > 10;
+
+  // Try to find hourly temps for 7:30–8:00 (morning) and 17:30 (evening)
+  const morningEntry = hourly.find(h => h.time === '07:00' || h.time === '08:00') || null;
+  const eveningEntry = hourly.find(h => h.time === '17:00' || h.time === '18:00') || null;
+
+  const morningTemp = morningEntry ? morningEntry.temp : temp;
+  const eveningTemp = eveningEntry ? eveningEntry.temp : temp;
+  const morningCode = morningEntry ? morningEntry.code : code;
+  const eveningCode = eveningEntry ? eveningEntry.code : code;
+
+  const morningRain = (morningCode >= 200 && morningCode < 600) ||
+    (morningEntry && morningEntry.precipitation_probability > 40);
+  const eveningRain = (eveningCode >= 200 && eveningCode < 600) ||
+    (eveningEntry && eveningEntry.precipitation_probability > 40);
+
+  const morningOutdoor = `🌅 Вранці (~7:30–8:00): ${morningTemp}°C, відчувається як ${feels_like}°C` +
+    (morningRain ? ' — дощ!' : '') +
+    (isSnow ? ' — сніг!' : '');
+
+  const eveningOutdoor = `🌆 Ввечері (~17:30): ${eveningTemp}°C` +
+    (eveningRain ? ' — можливий дощ на зворотньому шляху' : ' — без опадів');
+
+  const layering: string[] = [];
+
+  // ── Layer 1: base ──
+  if (morningTemp < 5) {
+    layering.push('🩱 Термобілизна (верх + низ) — обов\'язково при такому морозі');
+  } else if (morningTemp < 10) {
+    layering.push('🩱 Термобілизна — добре утеплить при холодній погоді');
+  }
+
+  // ── Layer 2: mid ──
+  if (morningTemp < 2) {
+    layering.push('🎽 Гольф або светр поверх термобілизни — максимум тепла');
+    layering.push('🧥 Кофта під куртку для додаткового шару');
+  } else if (morningTemp < 8) {
+    layering.push('🎽 Гольф або светр — головний утеплювальний шар');
+    layering.push('🧥 Кофта — за бажанням для комфорту');
+  } else if (morningTemp < 13) {
+    layering.push('🧥 Кофта або светр — достатньо для цієї температури');
+    layering.push('🎽 Гольф — якщо схильна мерзнути');
+  } else if (morningTemp < 18) {
+    layering.push('👕 Футболка + кофта або легкий светр');
+  } else {
+    layering.push('👕 Футболка — цілком достатньо вранці');
+  }
+
+  // ── Layer 3: outer ──
+  if (morningTemp < 0) {
+    layering.push('🧥 Зимова куртка — без варіантів');
+    layering.push('🦺 Тепла жилетка зайвою не буде під куртку');
+  } else if (morningTemp < 8) {
+    layering.push('🧥 Зимова куртка або дуже тепле пальто');
+    layering.push('🦺 Тепла жилетка — добре доповнить образ');
+  } else if (morningTemp < 14) {
+    layering.push('🧥 Осіннє пальто або куртка');
+    if (isWind) layering.push('🦺 Жилетка тепла зверху — захистить від вітру');
+  } else if (morningTemp < 20) {
+    layering.push('🧥 Легка куртка або вітровка');
+  } else {
+    layering.push('☀️ Верхній одяг не потрібен — тепло');
+  }
+
+  // ── Pants ──
+  if (morningTemp < 5) {
+    layering.push('👖 Джинси + термобілизна (низ) — обов\'язково');
+  } else {
+    layering.push('👖 Джинси — оптимальний вибір');
+  }
+
+  // ── Socks ──
+  if (morningTemp < 10) {
+    layering.push('🧦 Теплі носки — ноги не мерзнуть весь день');
+  } else {
+    layering.push('🧦 Звичайні носки — достатньо');
+  }
+
+  // ── Accessories ──
+  if (morningTemp < 3) {
+    layering.push('🧣 Шарф + шапка + рукавички — все три!');
+  } else if (morningTemp < 8) {
+    layering.push('🧣 Шарф і шапка обов\'язкові');
+    layering.push('🧤 Рукавички — береться похолодання ввечері');
+  } else if (morningTemp < 13) {
+    layering.push('🧣 Шарф або шийний хустку від вітру');
+  }
+
+  // ── Evening delta warning ──
+  const tempDelta = eveningTemp - morningTemp;
+  if (tempDelta > 6) {
+    layering.push(`🌡️ Ввечері буде на ${Math.abs(Math.round(tempDelta))}° тепліше — можна зняти верхній шар`);
+  } else if (tempDelta < -5) {
+    layering.push(`🌡️ Ввечері буде на ${Math.abs(Math.round(tempDelta))}° холодніше — візьми рукавички!`);
+  }
+
+  // ── Wind warning ──
+  if (isWind) {
+    layering.push(`💨 Вітер ${wind_speed} км/г — закрий шию, підніми комір`);
+  }
+
+  // ── Umbrella ──
+  let umbrellaNote: string;
+  if (morningRain && eveningRain) {
+    umbrellaNote = '☔ Парасоля потрібна і вранці, і ввечері — не забудь!';
+  } else if (morningRain) {
+    umbrellaNote = '🌂 Вранці дощ — візьми парасолю з дому';
+  } else if (eveningRain) {
+    umbrellaNote = '🌦️ Ввечері можливий дощ — краще взяти парасолю';
+  } else if (humidity > 80) {
+    umbrellaNote = '🌂 Висока вологість — парасоля не завадить';
+  } else {
+    umbrellaNote = '✨ Парасоля не потрібна — без опадів';
+  }
+
+  return { morningOutdoor, eveningOutdoor, layering, umbrellaNote };
+}
+
 function getAdvice(weather: WeatherData): Advice {
   const { temp, code, wind_speed, humidity } = weather;
   const isRain = code >= 200 && code < 600;
   const isSnow = code >= 600 && code < 700;
   const isWind = wind_speed > 10;
   const isWinter = temp < 0;
-  const isCold  = temp >= 0 && temp < 8;   // cold but above freezing
-  const isCool  = temp >= 8 && temp < 16;  // autumn range
+  const isCold  = temp >= 0 && temp < 8;
+  const isCool  = temp >= 8 && temp < 16;
   const isWarm  = temp >= 16 && temp < 25;
   const isHot   = temp >= 25;
 
@@ -104,44 +244,51 @@ function getAdvice(weather: WeatherData): Advice {
   const shoes: string[] = [];
 
   if (isWinter) {
-    // Below 0 °C — full winter kit
+    clothes.push('🩱 Термобілизна (верх + низ) — обов\'язково');
+    clothes.push('🎽 Гольф або светр поверх термобілизни');
     clothes.push('🧥 Зимова куртка — без варіантів');
     clothes.push('🧣 Шарф і шапка обов\'язкові');
     clothes.push('🧤 Теплі рукавички або варежки');
-    clothes.push('👖 Теплі штани або термо-легінси');
-    clothes.push('🧦 Термо-шкарпетки');
+    clothes.push('👖 Джинси з термо-низом');
+    clothes.push('🧦 Теплі носки — must have');
     shoes.push('🥾 Тракторні черевики — must have');
     shoes.push('👟 Зимові кросівки на хутрі');
   } else if (isCold) {
-    // 0–8 °C
-    clothes.push('🧥 Зимова куртка або дуже тепле пальто');
+    clothes.push('🩱 Термобілизна — добре утеплить');
+    clothes.push('🎽 Гольф або светр — основний шар тепла');
+    clothes.push('🧥 Зимова куртка або тепле пальто');
+    clothes.push('🦺 Тепла жилетка — за бажанням');
     clothes.push('🧣 Шарф і шапка');
     clothes.push('🧤 Рукавички');
-    clothes.push('👖 Теплі штани');
-    if (isWind) clothes.push('💨 Вітрозахисний шар — актуально!');
+    clothes.push('👖 Джинси');
+    clothes.push('🧦 Теплі носки');
+    if (isWind) clothes.push('💨 Підніми комір або шарф від вітру!');
     shoes.push('🥾 Тракторні черевики');
     shoes.push('👟 Утеплені кросівки');
-    shoes.push('🧦 Термо-шкарпетки');
   } else if (isCool) {
-    // 8–16 °C — autumn
-    clothes.push('🧥 Пальто або шкіряна куртка');
-    clothes.push('👚 Светр або кофта під верхній одяг');
-    clothes.push('👖 Джинси або щільні штани');
-    if (isWind) clothes.push('🧣 Шарф від вітру');
-    if (isRain)  clothes.push('🌧️ Водовідштовхувальна куртка або парасоля');
+    clothes.push('👕 Футболка або кофта — базовий шар');
+    clothes.push('🧥 Кофта або светр поверх');
+    clothes.push('🧥 Осіннє пальто або куртка');
+    if (isWind) {
+      clothes.push('🦺 Тепла жилетка — додатковий захист від вітру');
+      clothes.push('🧣 Шарф або хустка на шию');
+    }
+    if (isRain) clothes.push('🌧️ Водовідштовхувальна куртка або парасоля');
+    clothes.push('👖 Джинси');
+    clothes.push('🧦 Теплі носки — ногам буде тепло');
     shoes.push('👟 Кросівки закриті');
-    shoes.push('🥾 Чоботи або черевики (в дощ)');
+    shoes.push('🥾 Черевики (особливо в дощ)');
   } else if (isWarm) {
-    // 16–25 °C
-    clothes.push('👕 Футболка або лонгслів');
+    clothes.push('👕 Футболка — основа образу');
+    clothes.push('🧥 Кофта або легкий светр на вечір');
     clothes.push('👖 Джинси або легкі штани');
     if (isWind || isRain) clothes.push('🧥 Легка куртка або вітровка');
-    else clothes.push('☀️ Достатньо легкого верху');
+    else clothes.push('☀️ Верхній одяг не обов\'язковий вдень');
     shoes.push('👟 Кросівки — ідеальний варіант');
   } else {
     // isHot — 25+ °C
-    clothes.push('👕 Легка футболка або топ');
-    clothes.push('🩳 Шорти або легкі штани');
+    clothes.push('👕 Легка футболка');
+    clothes.push('🩳 Шорти або легкі джинси');
     clothes.push('🕶️ Сонцезахисні окуляри');
     clothes.push('🧴 Сонцезахисний крем — обов\'язково!');
     shoes.push('👟 Легкі кросівки або мокасини');
@@ -157,17 +304,17 @@ function getAdvice(weather: WeatherData): Advice {
   const umbrellaText = isRain
     ? '☔ Парасоля обов\'язкова — очікуються опади!'
     : humidity > 80
-      ? '🌂 Можливий дощ — краще взяти парасолю'
+      ? '🌂 Вологість понад 80% — краще взяти парасолю про всяк випадок'
       : '✨ Парасоля не потрібна — гарна погода';
 
   let summary = 'Звичайний день — одягайся комфортно і стильно';
-  if (isWinter && isSnow) summary = 'Зимова казка — але не замерзни! Тракторні черевики — твій друг.';
-  else if (isWinter)      summary = 'Мороз! Зимова куртка + тракторні чоботи = комфорт і стиль.';
-  else if (isCold)        summary = 'Холодно — тепла куртка і щільне взуття врятують день.';
-  else if (isCool && isRain) summary = 'Осінній дощ — пальто або шкіряна куртка та закриті кросівки!';
-  else if (isCool)        summary = 'Класична осінь — пальто або шкіряна куртка виглядають стильно.';
+  if (isWinter && isSnow) summary = 'Зимова казка — але не замерзни! Термобілизна + тракторні черевики.';
+  else if (isWinter)      summary = 'Мороз! Термобілизна + гольф + зимова куртка = комфорт увесь день.';
+  else if (isCold)        summary = 'Холодно — термобілизна, тепла куртка і щільне взуття врятують день.';
+  else if (isCool && isRain) summary = 'Осінній дощ — пальто/куртка, закриті кросівки і парасоля!';
+  else if (isCool)        summary = 'Класична осінь — кофта/светр під пальто виглядають стильно.';
   else if (isWarm && !isRain) summary = 'Чудова погода для прогулянки в улюблених кросівках!';
-  else if (isHot)         summary = 'Спека! Легкий одяг і не забудь про захист від сонця.';
+  else if (isHot)         summary = 'Спека! Легка футболка і не забудь про захист від сонця.';
 
   return { clothes, shoes, umbrella, umbrellaText, summary };
 }
@@ -376,6 +523,8 @@ export function WeatherPage() {
   }
 
   const advice = weather ? getAdvice(weather) : null;
+  const morningMode = isMorningCommuteTime();
+  const commuteAdvice = (weather && morningMode) ? getMorningCommuteAdvice(weather) : null;
 
   return (
     <div className="space-y-5 animate-fade-in pb-4">
@@ -519,13 +668,42 @@ export function WeatherPage() {
             </div>
           </div>
 
+          {/* Morning commute block — weekdays 06:50–08:00 */}
+          {commuteAdvice && (
+            <div className="glass-strong rounded-2xl p-4 animate-slide-up border border-gold/30" style={{ animationDelay: '0.13s' }}>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center">
+                  <span className="text-base">🚶‍♀️</span>
+                </div>
+                <h2 className="font-bold text-base text-gold-shimmer font-display">Твій маршрут сьогодні</h2>
+              </div>
+              <div className="space-y-2 mb-3">
+                <p className="text-sm font-medium">{commuteAdvice.morningOutdoor}</p>
+                <p className="text-sm font-medium">{commuteAdvice.eveningOutdoor}</p>
+              </div>
+              <div className="border-t border-border/40 pt-3 space-y-2">
+                <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2">Що вдягнути шарами</p>
+                {commuteAdvice.layering.map((l, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gold mt-1.5 flex-shrink-0" />{l}
+                  </div>
+                ))}
+              </div>
+              <div className={`mt-3 pt-3 border-t border-border/40 flex items-center gap-2 text-sm font-medium ${commuteAdvice.umbrellaNote.startsWith('☔') || commuteAdvice.umbrellaNote.startsWith('🌂') || commuteAdvice.umbrellaNote.startsWith('🌦️') ? 'text-accent' : 'text-green-500'}`}>
+                {commuteAdvice.umbrellaNote}
+              </div>
+            </div>
+          )}
+
           {/* Umbrella */}
           <div className={`rounded-2xl p-4 flex items-center gap-3 animate-slide-up ${advice.umbrella ? 'bg-accent/15 border border-accent/30' : 'bg-green-500/10 border border-green-500/20'}`}
             style={{ animationDelay: '0.15s' }}>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${advice.umbrella ? 'bg-accent/20' : 'bg-green-500/20'}`}>
               <Umbrella className={`w-5 h-5 ${advice.umbrella ? 'text-accent' : 'text-green-500'}`} />
             </div>
-            <p className="text-sm font-medium">{advice.umbrellaText}</p>
+            <div>
+              <p className="text-sm font-medium">{advice.umbrellaText}</p>
+            </div>
           </div>
 
           {/* Clothing */}
