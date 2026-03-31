@@ -13,15 +13,24 @@ interface WeatherData {
   visibility: number;
   description: string;
   code: number;
-  forecast: ForecastDay[];
+  hourly: HourlyEntry[];
+  tomorrow: TomorrowData;
 }
 
-interface ForecastDay {
-  date: string;
+interface HourlyEntry {
+  time: string;
+  temp: number;
+  code: number;
+  description: string;
+  precipitation_probability: number;
+}
+
+interface TomorrowData {
   temp_max: number;
   temp_min: number;
   code: number;
   description: string;
+  precipitation_probability: number;
 }
 
 interface CityResult {
@@ -73,83 +82,124 @@ function codeMap(wc: number): number {
   return 200;
 }
 
+// ── Clothing advice — female profile ────────────────────────────────────────
+// Rules:
+//   • No dresses / skirts ever
+//   • Shoes: sneakers (base), "тракторні" boots in winter
+//   • Autumn outerwear: coat OR leather jacket
+//   • Winter outerwear: winter jacket
+// ─────────────────────────────────────────────────────────────────────────────
 function getAdvice(weather: WeatherData): Advice {
   const { temp, code, wind_speed, humidity } = weather;
   const isRain = code >= 200 && code < 600;
   const isSnow = code >= 600 && code < 700;
   const isWind = wind_speed > 10;
-  const isCold = temp < 5;
-  const isCool = temp >= 5 && temp < 15;
-  const isWarm = temp >= 15 && temp < 25;
-  const isHot = temp >= 25;
+  const isWinter = temp < 0;
+  const isCold  = temp >= 0 && temp < 8;   // cold but above freezing
+  const isCool  = temp >= 8 && temp < 16;  // autumn range
+  const isWarm  = temp >= 16 && temp < 25;
+  const isHot   = temp >= 25;
+
   const clothes: string[] = [];
   const shoes: string[] = [];
 
-  if (isCold) {
-    clothes.push('🧥 Тепле пальто');
+  if (isWinter) {
+    // Below 0 °C — full winter kit
+    clothes.push('🧥 Зимова куртка — без варіантів');
     clothes.push('🧣 Шарф і шапка обов\'язкові');
     clothes.push('🧤 Теплі рукавички або варежки');
-    clothes.push('👖 Теплі штани або колготки');
-    shoes.push('👢 Утеплені зимові чоботи трактори');
-    shoes.push('🥾 Зимові кросівки');
+    clothes.push('👖 Теплі штани або термо-легінси');
+    clothes.push('🧦 Термо-шкарпетки');
+    shoes.push('🥾 Тракторні черевики — must have');
+    shoes.push('👟 Зимові кросівки на хутрі');
+  } else if (isCold) {
+    // 0–8 °C
+    clothes.push('🧥 Зимова куртка або дуже тепле пальто');
+    clothes.push('🧣 Шарф і шапка');
+    clothes.push('🧤 Рукавички');
+    clothes.push('👖 Теплі штани');
+    if (isWind) clothes.push('💨 Вітрозахисний шар — актуально!');
+    shoes.push('🥾 Тракторні черевики');
+    shoes.push('👟 Утеплені кросівки');
     shoes.push('🧦 Термо-шкарпетки');
   } else if (isCool) {
-    clothes.push('🧥 Осіння куртка або тренч');
-    clothes.push('👗 Тепла сукня або спідниця з колготками');
-    clothes.push('👕 Шаруватий одяг — светр + блузка');
+    // 8–16 °C — autumn
+    clothes.push('🧥 Пальто або шкіряна куртка');
+    clothes.push('👚 Светр або кофта під верхній одяг');
+    clothes.push('👖 Джинси або щільні штани');
     if (isWind) clothes.push('🧣 Шарф від вітру');
-    shoes.push('👢 Чоботи або ботильйони');
-    shoes.push('👠 Черевики на підборах');
-    shoes.push('👟 Закриті кросівки');
+    if (isRain)  clothes.push('🌧️ Водовідштовхувальна куртка або парасоля');
+    shoes.push('👟 Кросівки закриті');
+    shoes.push('🥾 Чоботи або черевики (в дощ)');
   } else if (isWarm) {
-    clothes.push('👗 Легка сукня або сарафан');
-    clothes.push('👚 Блузка або топ');
-    if (isWind || isRain) clothes.push('🧥 Легка куртка або кардиган');
-    else clothes.push('☀️ Досить легкого одягу');
-    shoes.push('👠 Туфлі або босоніжки');
-    shoes.push('👡 Сандалі на підборах');
-    shoes.push('👟 Легкі кросівки');
+    // 16–25 °C
+    clothes.push('👕 Футболка або лонгслів');
+    clothes.push('👖 Джинси або легкі штани');
+    if (isWind || isRain) clothes.push('🧥 Легка куртка або вітровка');
+    else clothes.push('☀️ Достатньо легкого верху');
+    shoes.push('👟 Кросівки — ідеальний варіант');
   } else {
-    clothes.push('👙 Легкі сукні та сарафани');
-    clothes.push('👚 Топи та майки');
-    clothes.push('🩳 Шорти або спідниці');
+    // isHot — 25+ °C
+    clothes.push('👕 Легка футболка або топ');
+    clothes.push('🩳 Шорти або легкі штани');
     clothes.push('🕶️ Сонцезахисні окуляри');
     clothes.push('🧴 Сонцезахисний крем — обов\'язково!');
-    shoes.push('👡 Сандалі або босоніжки');
-    shoes.push('👠 Туфлі на підборах');
-    shoes.push('👟 Легкі кросівки або балетки');
+    shoes.push('👟 Легкі кросівки або мокасини');
+    shoes.push('🩴 Шльопанці (тільки для пляжу/дому)');
   }
+
   if (isSnow) {
     clothes.unshift('❄️ Сніг! Одягайся по-зимовому');
-    shoes.unshift('👢 Непромокаючі чоботи на підборах — must have');
-    shoes.unshift('🥾 Зимові ботильйони');
+    shoes.unshift('🥾 Тракторні черевики — не слизьке взуття критично!');
   }
 
   const umbrella = isRain || humidity > 80;
   const umbrellaText = isRain
     ? '☔ Парасоля обов\'язкова — очікуються опади!'
-    : humidity > 80 ? '🌂 Можливий дощ — краще взяти парасолю'
-    : '✨ Парасоля не потрібна — гарна погода';
+    : humidity > 80
+      ? '🌂 Можливий дощ — краще взяти парасолю'
+      : '✨ Парасоля не потрібна — гарна погода';
 
   let summary = 'Звичайний день — одягайся комфортно і стильно';
-  if (isCold && isSnow) summary = 'Зимова казка, але тепліше вдягайтся — елегантно!';
-  else if (isCold) summary = 'Мороз! Не забудь утеплитися, але залишитись стильною.';
-  else if (isRain && isCool) summary = 'Типова осінняся гідратованою і стильною';
-  else if (isWarm && !isRain) summary = 'Чудова погода для прогулянки в красивому вбранні!';
+  if (isWinter && isSnow) summary = 'Зимова казка — але не замерзни! Тракторні черевики — твій друг.';
+  else if (isWinter)      summary = 'Мороз! Зимова куртка + тракторні чоботи = комфорт і стиль.';
+  else if (isCold)        summary = 'Холодно — тепла куртка і щільне взуття врятують день.';
+  else if (isCool && isRain) summary = 'Осінній дощ — пальто або шкіряна куртка та закриті кросівки!';
+  else if (isCool)        summary = 'Класична осінь — пальто або шкіряна куртка виглядають стильно.';
+  else if (isWarm && !isRain) summary = 'Чудова погода для прогулянки в улюблених кросівках!';
+  else if (isHot)         summary = 'Спека! Легкий одяг і не забудь про захист від сонця.';
 
   return { clothes, shoes, umbrella, umbrellaText, summary };
 }
 
-const WEEKDAYS = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const SAVED_CITY_KEY = 'hhh_weather_city';
 
 async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string): Promise<WeatherData> {
-  const [currentRes, forecastRes] = await Promise.all([
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,visibility,weather_code&timezone=auto`),
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`),
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().slice(0, 10);
+
+  const [currentRes, hourlyRes, dailyRes] = await Promise.all([
+    fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,visibility,weather_code` +
+      `&timezone=auto`
+    ),
+    fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability` +
+      `&start_date=${todayStr}&end_date=${todayStr}&timezone=auto`
+    ),
+    fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+      `&start_date=${tomorrowStr}&end_date=${tomorrowStr}&timezone=auto`
+    ),
   ]);
+
   const current = await currentRes.json();
-  const forecast = await forecastRes.json();
+  const hourlyData = await hourlyRes.json();
+  const dailyData  = await dailyRes.json();
 
   let city = cityName || 'Ваше місто';
   if (!cityName) {
@@ -161,6 +211,31 @@ async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string)
   }
 
   const wc = current.current.weather_code;
+
+  // Build hourly list — current hour onward, up to 24 entries
+  const currentHour = now.getHours();
+  const hourly: HourlyEntry[] = (hourlyData.hourly?.time || [])
+    .map((t: string, i: number) => {
+      const h = new Date(t).getHours();
+      return {
+        time: `${h.toString().padStart(2, '0')}:00`,
+        temp: Math.round(hourlyData.hourly.temperature_2m[i]),
+        code: codeMap(hourlyData.hourly.weather_code[i]),
+        description: WC_DESCRIPTIONS[hourlyData.hourly.weather_code[i]] || '',
+        precipitation_probability: hourlyData.hourly.precipitation_probability[i] ?? 0,
+      };
+    })
+    .filter((_: HourlyEntry, i: number) => i >= currentHour);
+
+  // Tomorrow
+  const tomorrow: TomorrowData = {
+    temp_max: Math.round(dailyData.daily.temperature_2m_max[0]),
+    temp_min: Math.round(dailyData.daily.temperature_2m_min[0]),
+    code: codeMap(dailyData.daily.weather_code[0]),
+    description: WC_DESCRIPTIONS[dailyData.daily.weather_code[0]] || '',
+    precipitation_probability: dailyData.daily.precipitation_probability_max[0] ?? 0,
+  };
+
   return {
     city,
     temp: Math.round(current.current.temperature_2m),
@@ -170,13 +245,8 @@ async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string)
     visibility: Math.round((current.current.visibility || 10000) / 1000),
     description: WC_DESCRIPTIONS[wc] || 'Невідомо',
     code: codeMap(wc),
-    forecast: forecast.daily.time.slice(1, 6).map((date: string, i: number) => ({
-      date,
-      temp_max: Math.round(forecast.daily.temperature_2m_max[i + 1]),
-      temp_min: Math.round(forecast.daily.temperature_2m_min[i + 1]),
-      code: codeMap(forecast.daily.weather_code[i + 1]),
-      description: WC_DESCRIPTIONS[forecast.daily.weather_code[i + 1]] || '',
-    })),
+    hourly,
+    tomorrow,
   };
 }
 
@@ -186,7 +256,6 @@ export function WeatherPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // City search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CityResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -194,7 +263,6 @@ export function WeatherPage() {
   const searchRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load initial weather
   useEffect(() => {
     const saved = localStorage.getItem(SAVED_CITY_KEY);
     if (saved) {
@@ -206,7 +274,6 @@ export function WeatherPage() {
         return;
       } catch {}
     }
-    // Try geolocation silently — if denied, fallback to Kyiv without prompting
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         pos => {
@@ -215,7 +282,6 @@ export function WeatherPage() {
             .catch(() => { setError('Помилка завантаження'); setLoading(false); });
         },
         () => {
-          // Silent fallback — Kropyvnytskyi, no error shown
           fetchWeatherByCoords(48.51, 32.26, 'Кропивницький')
             .then(w => { setWeather(w); setLoading(false); })
             .catch(() => { setError('Помилка завантаження'); setLoading(false); });
@@ -229,7 +295,6 @@ export function WeatherPage() {
     }
   }, []);
 
-  // City search via Open-Meteo geocoding
   useEffect(() => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSearchResults([]);
@@ -361,19 +426,12 @@ export function WeatherPage() {
               </button>
             )}
           </div>
-
-          {searching && (
-            <p className="text-xs text-muted-foreground text-center py-2">Шукаємо...</p>
-          )}
-
+          {searching && <p className="text-xs text-muted-foreground text-center py-2">Шукаємо...</p>}
           {searchResults.length > 0 && (
             <div className="space-y-1 max-h-52 overflow-y-auto">
               {searchResults.map((city, i) => (
-                <button
-                  key={i}
-                  onClick={() => selectCity(city)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/40 transition-colors tap-scale text-left"
-                >
+                <button key={i} onClick={() => selectCity(city)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-muted/40 transition-colors tap-scale text-left">
                   <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{city.name}</p>
@@ -385,7 +443,6 @@ export function WeatherPage() {
               ))}
             </div>
           )}
-
           {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-2">Міст не знайдено</p>
           )}
@@ -411,10 +468,10 @@ export function WeatherPage() {
             </div>
             <div className="grid grid-cols-4 gap-2 mt-5 pt-5 border-t border-border/40">
               {[
-                { icon: <Droplets className="w-4 h-4" />, val: `${weather.humidity}%`, label: 'Вологість' },
-                { icon: <Wind className="w-4 h-4" />, val: `${weather.wind_speed}км/г`, label: 'Вітер' },
-                { icon: <Eye className="w-4 h-4" />, val: `${weather.visibility}км`, label: 'Видим.' },
-                { icon: <Thermometer className="w-4 h-4" />, val: `${weather.feels_like}°`, label: 'Відчув.' },
+                { icon: <Droplets className="w-4 h-4" />, val: `${weather.humidity}%`,         label: 'Вологість' },
+                { icon: <Wind      className="w-4 h-4" />, val: `${weather.wind_speed}км/г`,   label: 'Вітер' },
+                { icon: <Eye       className="w-4 h-4" />, val: `${weather.visibility}км`,      label: 'Видим.' },
+                { icon: <Thermometer className="w-4 h-4"/>, val: `${weather.feels_like}°`,     label: 'Відчув.' },
               ].map((s, i) => (
                 <div key={i} className="text-center">
                   <div className="flex justify-center text-primary mb-1">{s.icon}</div>
@@ -425,24 +482,40 @@ export function WeatherPage() {
             </div>
           </div>
 
-          {/* 5-day forecast */}
+          {/* Hourly forecast — today */}
+          <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.05s' }}>
+            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Сьогодні по годинах</h2>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+              {weather.hourly.map((h, i) => (
+                <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0 min-w-[52px]">
+                  <span className="text-[11px] text-muted-foreground font-medium">{h.time}</span>
+                  <div className="text-primary">{getWeatherIcon(h.code)}</div>
+                  <span className="text-sm font-bold">{h.temp}°</span>
+                  {h.precipitation_probability > 0 && (
+                    <span className="text-[10px] text-blue-400 font-medium">{h.precipitation_probability}%</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tomorrow */}
           <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">5 Днів</h2>
-            <div className="space-y-2.5">
-              {weather.forecast.map((day, i) => {
-                const d = new Date(day.date);
-                return (
-                  <div key={i} className="flex items-center justify-between">
-                    <span className="text-sm font-semibold w-8">{WEEKDAYS[d.getDay()]}</span>
-                    <span className="text-muted-foreground">{getWeatherIcon(day.code)}</span>
-                    <span className="text-xs text-muted-foreground flex-1 ml-2 truncate">{day.description}</span>
-                    <div className="flex items-center gap-2 text-sm font-bold flex-shrink-0">
-                      <span className="text-foreground">{day.temp_max}°</span>
-                      <span className="text-muted-foreground">{day.temp_min}°</span>
-                    </div>
-                  </div>
-                );
-              })}
+            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Завтра</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-gold/80">{getWeatherIcon(weather.tomorrow.code)}</div>
+                <div>
+                  <p className="text-sm font-semibold">{weather.tomorrow.description}</p>
+                  {weather.tomorrow.precipitation_probability > 0 && (
+                    <p className="text-xs text-blue-400">Дощ: {weather.tomorrow.precipitation_probability}%</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-base font-bold flex-shrink-0">
+                <span className="text-foreground">{weather.tomorrow.temp_max}°</span>
+                <span className="text-muted-foreground">{weather.tomorrow.temp_min}°</span>
+              </div>
             </div>
           </div>
 
@@ -473,7 +546,7 @@ export function WeatherPage() {
           </div>
 
           {/* Shoes */}
-          <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.25s' }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
                 <span className="text-base">👟</span>
@@ -490,7 +563,7 @@ export function WeatherPage() {
           </div>
 
           {/* Summary */}
-          <div className="glass-strong rounded-2xl p-4 text-center animate-scale-in" style={{ animationDelay: '0.35s' }}>
+          <div className="glass-strong rounded-2xl p-4 text-center animate-scale-in" style={{ animationDelay: '0.3s' }}>
             <p className="text-base font-bold text-gold-shimmer font-display">{advice.summary}</p>
           </div>
         </>
