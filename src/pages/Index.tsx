@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import bgVideo from '@/assets/0331.mp4';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
 import { AddListDialog } from '@/components/AddListDialog';
@@ -45,15 +46,21 @@ const Index = () => {
   if (loading) {
     return (
       <>
-        <div className="orb-bg">
-          <div className="orb orb-1" /><div className="orb orb-2" />
-          <div className="orb orb-3" /><div className="orb orb-4" />
+        <div className="fixed inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            src={bgVideo}
+          />
         </div>
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <div className="relative z-10 min-h-screen flex flex-col items-center justify-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold to-yellow-600 flex items-center justify-center shadow-gold animate-float">
             <span className="text-2xl">🏠</span>
           </div>
-          <p className="text-muted-foreground text-sm animate-pulse">Завантаження...</p>
+          <p className="text-muted-foreground text-sm animate-pulse">Завантаження</p>
         </div>
       </>
     );
@@ -62,26 +69,40 @@ const Index = () => {
   if (!user) {
     return (
       <>
-        <div className="orb-bg">
-          <div className="orb orb-1" /><div className="orb orb-2" />
-          <div className="orb orb-3" /><div className="orb orb-4" />
+        <div className="fixed inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+            src={bgVideo}
+          />
         </div>
-        <AuthPage onAuth={async (mode, email, password, name) => {
-          if (mode === 'signup') return signUp(email, password, name || '');
-          return signIn(email, password);
-        }} />
+        <div className="relative z-10">
+          <AuthPage onAuth={async (mode, email, password, name) => {
+            if (mode === 'signup') return signUp(email, password, name || '');
+            return signIn(email, password);
+          }} />
+        </div>
       </>
     );
   }
 
   return (
     <>
-      <div className="orb-bg">
-        <div className="orb orb-1" /><div className="orb orb-2" />
-        <div className="orb orb-3" /><div className="orb orb-4" />
+      <div className="fixed inset-0 z-0">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+          src={bgVideo}
+        />
       </div>
 
-      <div className="min-h-screen">
+      <div className="relative z-10 min-h-screen">
         <main className="max-w-lg mx-auto px-4 pt-6 pb-28">
           {tab === 'dashboard' && (
             <DashboardPage
