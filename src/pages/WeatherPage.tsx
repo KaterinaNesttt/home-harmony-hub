@@ -205,15 +205,15 @@ export function WeatherPage() {
             .catch(() => { setError('Помилка завантаження'); setLoading(false); });
         },
         () => {
-          // Silent fallback — Kyiv, no error shown
-          fetchWeatherByCoords(50.45, 30.52, 'Київ')
+          // Silent fallback — Kropyvnytskyi, no error shown
+          fetchWeatherByCoords(48.51, 32.26, 'Кропивницький')
             .then(w => { setWeather(w); setLoading(false); })
             .catch(() => { setError('Помилка завантаження'); setLoading(false); });
         },
         { timeout: 5000 }
       );
     } else {
-      fetchWeatherByCoords(50.45, 30.52, 'Київ')
+      fetchWeatherByCoords(48.51, 32.26, 'Кропивницький')
         .then(w => { setWeather(w); setLoading(false); })
         .catch(() => { setError('Помилка завантаження'); setLoading(false); });
     }
