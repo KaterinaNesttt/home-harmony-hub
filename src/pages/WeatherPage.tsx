@@ -86,32 +86,43 @@ function getAdvice(weather: WeatherData): Advice {
   const shoes: string[] = [];
 
   if (isCold) {
-    clothes.push('🧥 Важке пальто або пуховик');
+    clothes.push('🧥 Тепле пальто');
     clothes.push('🧣 Шарф і шапка обов\'язкові');
-    clothes.push('🧤 Теплі рукавички');
-    shoes.push('👢 Утеплені зимові чоботи');
+    clothes.push('🧤 Теплі рукавички або варежки');
+    clothes.push('👖 Теплі штани або колготки');
+    shoes.push('👢 Утеплені зимові чоботи трактори');
+    shoes.push('🥾 Зимові кросівки');
     shoes.push('🧦 Термо-шкарпетки');
   } else if (isCool) {
-    clothes.push('🧥 Куртка або тепла кофта');
-    clothes.push('👕 Шаруватий одяг — краще кілька шарів');
+    clothes.push('🧥 Осіння куртка або тренч');
+    clothes.push('👗 Тепла сукня або спідниця з колготками');
+    clothes.push('👕 Шаруватий одяг — светр + блузка');
     if (isWind) clothes.push('🧣 Шарф від вітру');
-    shoes.push('👟 Закрите взуття');
-    shoes.push('👞 Черевики підійдуть ідеально');
+    shoes.push('👢 Чоботи або ботильйони');
+    shoes.push('👠 Черевики на підборах');
+    shoes.push('👟 Закриті кросівки');
   } else if (isWarm) {
-    clothes.push('👔 Легка сорочка або блузка');
-    if (isWind || isRain) clothes.push('🧥 Легка куртка на всяк випадок');
+    clothes.push('👗 Легка сукня або сарафан');
+    clothes.push('👚 Блузка або топ');
+    if (isWind || isRain) clothes.push('🧥 Легка куртка або кардиган');
     else clothes.push('☀️ Досить легкого одягу');
-    shoes.push('👟 Кросівки або мокасини');
+    shoes.push('👠 Туфлі або босоніжки');
+    shoes.push('👡 Сандалі на підборах');
+    shoes.push('👟 Легкі кросівки');
   } else {
-    clothes.push('👕 Легкі майки і шорти');
+    clothes.push('👙 Легкі сукні та сарафани');
+    clothes.push('👚 Топи та майки');
+    clothes.push('🩳 Шорти або спідниці');
     clothes.push('🕶️ Сонцезахисні окуляри');
     clothes.push('🧴 Сонцезахисний крем — обов\'язково!');
-    shoes.push('👡 Сандалі або відкрите взуття');
-    shoes.push('👟 Легкі кросівки');
+    shoes.push('👡 Сандалі або босоніжки');
+    shoes.push('👠 Туфлі на підборах');
+    shoes.push('👟 Легкі кросівки або балетки');
   }
   if (isSnow) {
-    clothes.unshift('❄️ Сніг! Одягайтесь по-зимовому');
-    shoes.unshift('👢 Непромокаючі чоботи — must have');
+    clothes.unshift('❄️ Сніг! Одягайся по-зимовому');
+    shoes.unshift('👢 Непромокаючі чоботи на підборах — must have');
+    shoes.unshift('🥾 Зимові ботильйони');
   }
 
   const umbrella = isRain || humidity > 80;
@@ -120,12 +131,11 @@ function getAdvice(weather: WeatherData): Advice {
     : humidity > 80 ? '🌂 Можливий дощ — краще взяти парасолю'
     : '✨ Парасоля не потрібна — гарна погода';
 
-  let summary = 'Звичайний день — одягайтесь комфортно';
-  if (isCold && isSnow) summary = 'Зимова казка, але тепліше вдягайтесь!';
-  else if (isCold) summary = 'Мороз! Не забудьте утеплитися.';
-  else if (isRain && isCool) summary = 'Типова осіння погода — куртка і парасоля';
-  else if (isHot) summary = 'Спекотний день — залишайтесь гідратованими';
-  else if (isWarm && !isRain) summary = 'Чудова погода для прогулянки!';
+  let summary = 'Звичайний день — одягайся комфортно і стильно';
+  if (isCold && isSnow) summary = 'Зимова казка, але тепліше вдягайтся — елегантно!';
+  else if (isCold) summary = 'Мороз! Не забудь утеплитися, але залишитись стильною.';
+  else if (isRain && isCool) summary = 'Типова осінняся гідратованою і стильною';
+  else if (isWarm && !isRain) summary = 'Чудова погода для прогулянки в красивому вбранні!';
 
   return { clothes, shoes, umbrella, umbrellaText, summary };
 }
