@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
@@ -22,10 +22,23 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
   const [access, setAccess] = useState<AccessType>('shared');
   const [deadline, setDeadline] = useState('');
   const [assigneeQuery, setAssigneeQuery] = useState('');
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAssignee(currentUserId);
   }, [currentUserId, open]);
+
+  useEffect(() => {
+    if (!open || !window.visualViewport) return;
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - window.visualViewport!.height);
+      setKeyboardOffset(offset);
+    };
+    updateKeyboardOffset();
+    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
+    return () => window.visualViewport?.removeEventListener('resize', updateKeyboardOffset);
+  }, [open]);
 
   if (!open) return null;
 
@@ -56,16 +69,28 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
     return person.display_name.toLowerCase().includes(query) || person.email.toLowerCase().includes(query);
   });
 
+  const scrollFocusedFieldIntoView = () => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || !modalRef.current?.contains(active)) return;
+    window.setTimeout(() => {
+      active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 220);
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
       onClick={onClose}
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))' }}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+      }}
     >
       <div
-        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
+        ref={modalRef}
+        className="glass-strong w-full max-w-md rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
-        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(keyboard-inset-height, 0px) - 16px)' }}
+        style={{ maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - ${keyboardOffset}px - 16px)` }}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -84,7 +109,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             placeholder="Назва задачі"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            autoFocus
+            onFocus={scrollFocusedFieldIntoView}
             className="w-full h-14 px-4 glass rounded-2xl text-base font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all border border-border/50"
           />
 
@@ -92,6 +117,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             placeholder="Опис (опціонально)"
             value={description}
             onChange={e => setDescription(e.target.value)}
+            onFocus={scrollFocusedFieldIntoView}
             rows={2}
             className="w-full px-4 py-3 glass rounded-2xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all border border-border/50 resize-none"
           />
@@ -102,6 +128,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
               type="datetime-local"
               value={deadline}
               onChange={e => setDeadline(e.target.value)}
+              onFocus={scrollFocusedFieldIntoView}
               className="w-full h-12 px-4 glass rounded-2xl text-sm focus:outline-none focus:border-primary/50 transition-all border border-border/50"
             />
           </div>
