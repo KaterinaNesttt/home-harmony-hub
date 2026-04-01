@@ -196,9 +196,9 @@ export default {
           t.*,
           owner.display_name AS user_display_name,
           CASE
-            WHEN t.assignee = 'both' THEN 'РћР±РѕС”'
-            WHEN t.assignee = 'me' THEN 'РЇ'
-            WHEN t.assignee = 'partner' THEN 'РџР°СЂС‚РЅРµСЂ'
+            WHEN t.assignee = 'both' THEN 'Обоє'
+            WHEN t.assignee = 'me' THEN 'Я'
+            WHEN t.assignee = 'partner' THEN 'Партнер'
             ELSE assignee.display_name
           END AS assignee_name
         FROM tasks t
@@ -237,7 +237,7 @@ export default {
         task.priority || 'medium',
         task.deadline || null,
         task.assignee || user.id,
-        task.category || 'Р”С–Рј',
+        task.category || 'Дім',
         task.access || 'shared',
         task.pinned ? 1 : 0,
         now,
@@ -247,7 +247,7 @@ export default {
         id,
         user_id: user.id,
         user_display_name: user.display_name,
-        assignee_name: task.assignee === 'both' ? 'РћР±РѕС”' : undefined,
+        assignee_name: task.assignee === 'both' ? 'Обоє' : undefined,
         ...task,
         assignee: task.assignee || user.id,
         created_at: now,
@@ -284,9 +284,9 @@ export default {
             t.*,
             owner.display_name AS user_display_name,
             CASE
-              WHEN t.assignee = 'both' THEN 'РћР±РѕС”'
-              WHEN t.assignee = 'me' THEN 'РЇ'
-              WHEN t.assignee = 'partner' THEN 'РџР°СЂС‚РЅРµСЂ'
+              WHEN t.assignee = 'both' THEN 'Обоє'
+              WHEN t.assignee = 'me' THEN 'Я'
+              WHEN t.assignee = 'partner' THEN 'Партнер'
               ELSE assignee.display_name
             END AS assignee_name
           FROM tasks t
@@ -347,7 +347,7 @@ export default {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       await env.DB.prepare('INSERT INTO shopping_lists (id,user_id,title,type,category,access,pinned,created_at) VALUES (?,?,?,?,?,?,?,?)')
-        .bind(id, user.id, list.title, list.type || 'daily', list.category || 'Р”С–Рј', list.access || 'shared', list.pinned ? 1 : 0, now)
+        .bind(id, user.id, list.title, list.type || 'daily', list.category || 'Дім', list.access || 'shared', list.pinned ? 1 : 0, now)
         .run();
       return json({ id, user_id: user.id, user_display_name: user.display_name, ...list, created_at: now, items: [], pinned: !!list.pinned });
     }

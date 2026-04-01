@@ -4,16 +4,16 @@ import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
 
 const statusLabels: Record<Task['status'], string> = {
-  unseen: 'РќРµ Р±Р°С‡РёРІ',
-  seen: 'РџРѕР±Р°С‡РёРІ',
-  in_progress: 'Р’ РїСЂРѕС†РµСЃС–',
-  done: 'Р’РёРєРѕРЅР°РЅРѕ',
+  unseen: 'Не бачила',
+  seen: 'Побачила',
+  in_progress: 'У процесі',
+  done: 'Виконано',
 };
 
 const priorityConfig: Record<Task['priority'], { label: string; bg: string; text: string }> = {
-  low: { label: 'РќРёР·СЊРєРёР№', bg: 'bg-green-500/15', text: 'text-green-500' },
-  medium: { label: 'РЎРµСЂРµРґРЅС–Р№', bg: 'bg-gold/15', text: 'text-gold' },
-  high: { label: 'Р’РёСЃРѕРєРёР№', bg: 'bg-destructive/15', text: 'text-destructive' },
+  low: { label: 'Низький', bg: 'bg-green-500/15', text: 'text-green-500' },
+  medium: { label: 'Середній', bg: 'bg-gold/15', text: 'text-gold' },
+  high: { label: 'Високий', bg: 'bg-destructive/15', text: 'text-destructive' },
 };
 
 const statusDot: Record<Task['status'], string> = {
@@ -32,12 +32,11 @@ interface TaskCardProps {
 }
 
 function getAssigneeLabel(task: Task, currentUserId?: string, householdUsers: CFHouseholdUser[] = []) {
-  if (task.assignee === 'both') return 'РћР±РѕС”';
+  if (task.assignee === 'both') return 'Обоє';
   if (task.assigneeName) return task.assigneeName;
-  if (task.assignee === currentUserId) return 'РЇ';
-  if (task.assignee === 'me') return 'РЇ';
-  if (task.assignee === 'partner') return 'РџР°СЂС‚РЅРµСЂ';
-  return householdUsers.find(person => person.id === task.assignee)?.display_name || 'Р’РёРєРѕРЅР°РІРµС†СЊ';
+  if (task.assignee === currentUserId || task.assignee === 'me') return 'Я';
+  if (task.assignee === 'partner') return 'Партнер';
+  return householdUsers.find(person => person.id === task.assignee)?.display_name || 'Виконавець';
 }
 
 export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDone, onClick }: TaskCardProps) {
@@ -50,10 +49,7 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
   return (
     <div
       onClick={onClick}
-      className={cn(
-        'group relative glass rounded-2xl p-4 card-hover tap-scale animate-fade-in cursor-pointer',
-        isDone && 'opacity-50'
-      )}
+      className={cn('group relative glass rounded-2xl p-4 card-hover tap-scale animate-fade-in cursor-pointer', isDone && 'opacity-50')}
     >
       <div
         className={cn(
@@ -68,9 +64,7 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
           onClick={e => { e.stopPropagation(); onToggleDone?.(); }}
           className={cn(
             'mt-0.5 w-6 h-6 rounded-full border-2 flex-shrink-0 transition-all flex items-center justify-center tap-scale',
-            isDone
-              ? 'bg-green-500 border-green-500 shadow-[0_0_10px_hsla(142,60%,50%,0.5)]'
-              : 'border-muted-foreground/40 hover:border-primary hover:bg-primary/10'
+            isDone ? 'bg-green-500 border-green-500 shadow-[0_0_10px_hsla(142,60%,50%,0.5)]' : 'border-muted-foreground/40 hover:border-primary hover:bg-primary/10'
           )}
         >
           {isDone && (
@@ -88,9 +82,7 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
             </h3>
           </div>
 
-          {task.description && (
-            <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{task.description}</p>
-          )}
+          {task.description && <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{task.description}</p>}
 
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn('inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full', pc.bg, pc.text)}>
@@ -103,12 +95,7 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
             </span>
 
             {deadline && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full',
-                  isOverdue ? 'bg-destructive/15 text-destructive' : 'text-muted-foreground'
-                )}
-              >
+              <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full', isOverdue ? 'bg-destructive/15 text-destructive' : 'text-muted-foreground')}>
                 {isOverdue ? <AlertCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
                 {deadline.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
               </span>
@@ -122,7 +109,7 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
             {task.createdByName && (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/80">
                 <User className="w-3 h-3" />
-                {`РґРѕРґР°РІ${task.createdByName === 'РЇ' ? '(-Р»Р°)' : ''}: ${task.createdByName}`}
+                {`Додала: ${task.createdByName}`}
               </span>
             )}
           </div>

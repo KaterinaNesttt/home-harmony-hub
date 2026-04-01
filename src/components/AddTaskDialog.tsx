@@ -18,7 +18,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [assignee, setAssignee] = useState<Assignee>(currentUserId);
-  const [category, setCategory] = useState<Category>('Р”С–Рј');
+  const [category, setCategory] = useState<Category>('Дім');
   const [access, setAccess] = useState<AccessType>('shared');
   const [deadline, setDeadline] = useState('');
 
@@ -56,7 +56,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             <div className="w-10 h-10 btn-gold rounded-2xl flex items-center justify-center shadow-gold">
               <Sparkles className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold font-display">РќРѕРІР° Р·Р°РґР°С‡Р°</h2>
+            <h2 className="text-xl font-bold font-display">Нова задача</h2>
           </div>
           <button onClick={onClose} className="w-9 h-9 glass rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground tap-scale">
             <X className="w-5 h-5" />
@@ -65,7 +65,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
 
         <div className="space-y-4">
           <input
-            placeholder="РќР°Р·РІР° Р·Р°РґР°С‡С–"
+            placeholder="Назва задачі"
             value={title}
             onChange={e => setTitle(e.target.value)}
             autoFocus
@@ -73,7 +73,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
           />
 
           <textarea
-            placeholder="РћРїРёСЃ (РѕРїС†С–РѕРЅР°Р»СЊРЅРѕ)"
+            placeholder="Опис (опціонально)"
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
@@ -81,7 +81,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
           />
 
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Р”РµРґР»Р°Р№РЅ</label>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Дедлайн</label>
             <input
               type="datetime-local"
               value={deadline}
@@ -92,21 +92,21 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РџСЂС–РѕСЂРёС‚РµС‚</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Пріоритет</label>
               <Select value={priority} onValueChange={v => setPriority(v as TaskPriority)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">🟢 РќРёР·СЊРєРёР№</SelectItem>
-                  <SelectItem value="medium">🟡 РЎРµСЂРµРґРЅС–Р№</SelectItem>
-                  <SelectItem value="high">🔴 Р’РёСЃРѕРєРёР№</SelectItem>
+                  <SelectItem value="low">🟢 Низький</SelectItem>
+                  <SelectItem value="medium">🟡 Середній</SelectItem>
+                  <SelectItem value="high">🔴 Високий</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РҐС‚Рѕ</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Хто</label>
               <Select value={assignee} onValueChange={v => setAssignee(v as Assignee)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
@@ -117,13 +117,13 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
                       {person.id === currentUserId ? '👤 Я' : '👥'} {person.display_name}
                     </SelectItem>
                   ))}
-                  <SelectItem value="both">🤝 РћР±РѕС”</SelectItem>
+                  <SelectItem value="both">🤝 Обоє</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РљР°С‚РµРіРѕСЂС–СЏ</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Категорія</label>
               <Select value={category} onValueChange={v => setCategory(v as Category)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
@@ -135,14 +135,14 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Р”РѕСЃС‚СѓРї</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Доступ</label>
               <Select value={access} onValueChange={v => setAccess(v as AccessType)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">🤝 РЎРїС–Р»СЊРЅР°</SelectItem>
-                  <SelectItem value="private">🔒 РџСЂРёРІР°С‚РЅР°</SelectItem>
+                  <SelectItem value="shared">🤝 Спільна</SelectItem>
+                  <SelectItem value="private">🔒 Приватна</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -153,7 +153,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             disabled={!title.trim()}
             className="btn-gold w-full h-14 rounded-2xl font-bold text-base tap-scale disabled:opacity-50 mt-1"
           >
-            ✨ РЎС‚РІРѕСЂРёС‚Рё Р·Р°РґР°С‡Сѓ
+            ✨ Створити задачу
           </button>
         </div>
       </div>

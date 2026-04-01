@@ -1,7 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Cloud, Sun, CloudRain, CloudSnow, CloudLightning, Wind, Droplets,
-  Eye, Thermometer, Shirt, Umbrella, RefreshCw, MapPin, Search, X
+  Cloud,
+  Sun,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  Wind,
+  Droplets,
+  Eye,
+  Thermometer,
+  Shirt,
+  Umbrella,
+  RefreshCw,
+  MapPin,
+  Search,
+  X,
 } from 'lucide-react';
 import { getAdvice, getMorningCommuteAdvice } from '@/lib/weather-advice';
 
@@ -54,14 +67,30 @@ function getWeatherIcon(code: number, large = false) {
 }
 
 const WC_DESCRIPTIONS: Record<number, string> = {
-  0:'РЇСЃРЅРѕ', 1:'РџРµСЂРµРІР°Р¶РЅРѕ СЏСЃРЅРѕ', 2:'РњС–РЅР»РёРІР° С…РјР°СЂРЅС–СЃС‚СЊ', 3:'РџРѕС…РјСѓСЂРѕ',
-  45:'РўСѓРјР°РЅ', 48:'РџР°РјРѕСЂРѕР·РЅРёР№ С‚СѓРјР°РЅ',
-  51:'РњСЂСЏРєР°', 53:'РњСЂСЏРєР° РїРѕРјС–СЂРЅР°', 55:'РњСЂСЏРєР° СЃРёР»СЊРЅР°',
-  61:'Р”РѕС‰ СЃР»Р°Р±РєРёР№', 63:'Р”РѕС‰ РїРѕРјС–СЂРЅРёР№', 65:'Р”РѕС‰ СЃРёР»СЊРЅРёР№',
-  71:'РЎРЅС–Рі СЃР»Р°Р±РєРёР№', 73:'РЎРЅС–Рі РїРѕРјС–СЂРЅРёР№', 75:'РЎРЅС–Рі СЃРёР»СЊРЅРёР№',
-  77:'РЎРЅС–РіРѕРІР° РєСЂСѓРїР°', 80:'Р—Р»РёРІР° СЃР»Р°Р±РєР°', 81:'Р—Р»РёРІР° РїРѕРјС–СЂРЅР°', 82:'Р—Р»РёРІР° СЃРёР»СЊРЅР°',
-  85:'РЎРЅС–РіРѕРІС– Р·Р»РёРІРё', 86:'РЎРЅС–РіРѕРІС– Р·Р»РёРІРё СЃРёР»СЊРЅС–',
-  95:'Р“СЂРѕР·Р°', 96:'Р“СЂРѕР·Р° Р· РіСЂР°РґРѕРј', 99:'Р“СЂРѕР·Р° Р· СЃРёР»СЊРЅРёРј РіСЂР°РґРѕРј',
+  0: 'Ясно',
+  1: 'Переважно ясно',
+  2: 'Мінлива хмарність',
+  3: 'Похмуро',
+  45: 'Туман',
+  48: 'Паморозний туман',
+  51: 'Мряка',
+  53: 'Мряка помірна',
+  55: 'Мряка сильна',
+  61: 'Дощ слабкий',
+  63: 'Дощ помірний',
+  65: 'Дощ сильний',
+  71: 'Сніг слабкий',
+  73: 'Сніг помірний',
+  75: 'Сніг сильний',
+  77: 'Снігова крупа',
+  80: 'Злива слабка',
+  81: 'Злива помірна',
+  82: 'Злива сильна',
+  85: 'Снігові зливи',
+  86: 'Снігові зливи сильні',
+  95: 'Гроза',
+  96: 'Гроза з градом',
+  99: 'Гроза з сильним градом',
 };
 
 function codeMap(wc: number): number {
@@ -94,18 +123,18 @@ async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string)
   const [currentRes, hourlyRes, dailyRes] = await Promise.all([
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,visibility,weather_code` +
-      `&timezone=auto`
+        `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,visibility,weather_code` +
+        `&timezone=auto`,
     ),
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability` +
-      `&start_date=${todayStr}&end_date=${todayStr}&timezone=auto`
+        `&hourly=temperature_2m,apparent_temperature,weather_code,precipitation_probability` +
+        `&start_date=${todayStr}&end_date=${todayStr}&timezone=auto`,
     ),
     fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
-      `&start_date=${tomorrowStr}&end_date=${tomorrowStr}&timezone=auto`
+        `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
+        `&start_date=${tomorrowStr}&end_date=${tomorrowStr}&timezone=auto`,
     ),
   ]);
 
@@ -113,7 +142,7 @@ async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string)
   const hourlyData = await hourlyRes.json();
   const dailyData = await dailyRes.json();
 
-  let city = cityName || 'Р’Р°С€Рµ РјС–СЃС‚Рѕ';
+  let city = cityName || 'Ваше місто';
   if (!cityName) {
     try {
       const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
@@ -153,7 +182,7 @@ async function fetchWeatherByCoords(lat: number, lon: number, cityName?: string)
     humidity: current.current.relative_humidity_2m,
     wind_speed: Math.round(current.current.wind_speed_10m),
     visibility: Math.round((current.current.visibility || 10000) / 1000),
-    description: WC_DESCRIPTIONS[wc] || 'РќРµРІС–РґРѕРјРѕ',
+    description: WC_DESCRIPTIONS[wc] || 'Невідомо',
     code: codeMap(wc),
     hourly,
     tomorrow,
@@ -178,30 +207,54 @@ export function WeatherPage() {
       try {
         const { lat, lon, name } = JSON.parse(saved);
         fetchWeatherByCoords(lat, lon, name)
-          .then(w => { setWeather(w); setLoading(false); })
-          .catch(() => { setError('РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ'); setLoading(false); });
+          .then((w) => {
+            setWeather(w);
+            setLoading(false);
+          })
+          .catch(() => {
+            setError('Помилка завантаження');
+            setLoading(false);
+          });
         return;
       } catch {}
     }
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => {
+        (pos) => {
           fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude)
-            .then(w => { setWeather(w); setLoading(false); })
-            .catch(() => { setError('РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ'); setLoading(false); });
+            .then((w) => {
+              setWeather(w);
+              setLoading(false);
+            })
+            .catch(() => {
+              setError('Помилка завантаження');
+              setLoading(false);
+            });
         },
         () => {
-          fetchWeatherByCoords(48.51, 32.26, 'РљСЂРѕРїРёРІРЅРёС†СЊРєРёР№')
-            .then(w => { setWeather(w); setLoading(false); })
-            .catch(() => { setError('РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ'); setLoading(false); });
+          fetchWeatherByCoords(48.51, 32.26, 'Кропивницький')
+            .then((w) => {
+              setWeather(w);
+              setLoading(false);
+            })
+            .catch(() => {
+              setError('Помилка завантаження');
+              setLoading(false);
+            });
         },
-        { timeout: 5000 }
+        { timeout: 5000 },
       );
     } else {
-      fetchWeatherByCoords(48.51, 32.26, 'РљСЂРѕРїРёРІРЅРёС†СЊРєРёР№')
-        .then(w => { setWeather(w); setLoading(false); })
-        .catch(() => { setError('РџРѕРјРёР»РєР° Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ'); setLoading(false); });
+      fetchWeatherByCoords(48.51, 32.26, 'Кропивницький')
+        .then((w) => {
+          setWeather(w);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Помилка завантаження');
+          setLoading(false);
+        });
     }
   }, []);
 
@@ -216,16 +269,18 @@ export function WeatherPage() {
       setSearching(true);
       try {
         const res = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery)}&count=6&language=uk&format=json`
+          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery)}&count=6&language=uk&format=json`,
         );
         const data = await res.json();
-        setSearchResults((data.results || []).map((r: Record<string, unknown>) => ({
-          name: r.name as string,
-          country: r.country as string,
-          admin1: r.admin1 as string | undefined,
-          lat: r.latitude as number,
-          lon: r.longitude as number,
-        })));
+        setSearchResults(
+          (data.results || []).map((r: Record<string, unknown>) => ({
+            name: r.name as string,
+            country: r.country as string,
+            admin1: r.admin1 as string | undefined,
+            lat: r.latitude as number,
+            lon: r.longitude as number,
+          })),
+        );
       } catch {
         setSearchResults([]);
       } finally {
@@ -244,7 +299,7 @@ export function WeatherPage() {
       setWeather(w);
       localStorage.setItem(SAVED_CITY_KEY, JSON.stringify({ lat: city.lat, lon: city.lon, name: city.name }));
     } catch {
-      setError('РќРµ РІРґР°Р»РѕСЃСЏ Р·Р°РІР°РЅС‚Р°Р¶РёС‚Рё РїРѕРіРѕРґСѓ');
+      setError('Не вдалося завантажити погоду');
     } finally {
       setRefreshing(false);
     }
@@ -270,7 +325,7 @@ export function WeatherPage() {
         <div className="w-16 h-16 rounded-2xl glass flex items-center justify-center animate-pulse">
           <Cloud className="w-8 h-8 text-primary" />
         </div>
-        <p className="text-muted-foreground">Р—Р°РІР°РЅС‚Р°Р¶СѓС”РјРѕ РїРѕРіРѕРґСѓ...</p>
+        <p className="text-muted-foreground">Завантажуємо погоду...</p>
       </div>
     );
   }
@@ -280,7 +335,7 @@ export function WeatherPage() {
       <div className="flex flex-col items-center justify-center py-24 gap-4 animate-fade-in">
         <p className="text-destructive">{error}</p>
         <button onClick={() => { setError(null); setLoading(true); }} className="btn-gold px-6 py-3 rounded-2xl font-bold tap-scale">
-          РЎРїСЂРѕР±СѓРІР°С‚Рё Р·РЅРѕРІСѓ
+          Спробувати знову
         </button>
       </div>
     );
@@ -294,7 +349,7 @@ export function WeatherPage() {
     <div className="space-y-5 animate-fade-in pb-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold font-display">РџРѕРіРѕРґР°</h1>
+          <h1 className="text-2xl font-bold font-display">Погода</h1>
           {weather && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
               <MapPin className="w-3.5 h-3.5" />
@@ -304,7 +359,10 @@ export function WeatherPage() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => { setShowSearch(s => !s); setTimeout(() => searchRef.current?.focus(), 80); }}
+            onClick={() => {
+              setShowSearch((s) => !s);
+              setTimeout(() => searchRef.current?.focus(), 80);
+            }}
             className={`w-11 h-11 rounded-xl flex items-center justify-center tap-scale transition-all ${showSearch ? 'bg-primary text-primary-foreground' : 'glass text-muted-foreground hover:text-foreground'}`}
           >
             <Search className="w-5 h-5" />
@@ -325,20 +383,23 @@ export function WeatherPage() {
             <input
               ref={searchRef}
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Р’РІРµРґС–С‚СЊ РЅР°Р·РІСѓ РјС–СЃС‚Р°..."
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Введіть назву міста..."
               className="w-full h-12 pl-10 pr-10 glass rounded-xl text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 border border-border/50 transition-all"
             />
             {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-muted flex items-center justify-center tap-scale"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             )}
           </div>
-          {searching && <p className="text-xs text-muted-foreground text-center py-2">РЁСѓРєР°С”РјРѕ...</p>}
+          {searching && <p className="text-xs text-muted-foreground text-center py-2">Шукаємо...</p>}
           {searchResults.length > 0 && (
             <div className="space-y-1 max-h-52 overflow-y-auto">
               {searchResults.map((city, i) => (
@@ -350,16 +411,14 @@ export function WeatherPage() {
                   <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate">{city.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {[city.admin1, city.country].filter(Boolean).join(', ')}
-                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{[city.admin1, city.country].filter(Boolean).join(', ')}</p>
                   </div>
                 </button>
               ))}
             </div>
           )}
           {searchQuery.length >= 2 && !searching && searchResults.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-2">РњС–СЃС‚ РЅРµ Р·РЅР°Р№РґРµРЅРѕ</p>
+            <p className="text-xs text-muted-foreground text-center py-2">Місто не знайдено</p>
           )}
         </div>
       )}
@@ -370,11 +429,11 @@ export function WeatherPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-end gap-2">
-                  <span className="text-7xl font-bold font-display text-gold leading-none">{weather.temp}В°</span>
+                  <span className="text-7xl font-bold font-display text-gold leading-none">{weather.temp}°</span>
                   <span className="text-2xl text-muted-foreground mb-2">C</span>
                 </div>
                 <p className="text-lg font-medium text-foreground mt-1">{weather.description}</p>
-                <p className="text-sm text-muted-foreground">Р’С–РґС‡СѓРІР°С”С‚СЊСЃСЏ СЏРє {weather.feels_like}В°</p>
+                <p className="text-sm text-muted-foreground">Відчувається як {weather.feels_like}°</p>
               </div>
               <div className="text-gold/80 drop-shadow-[0_0_20px_hsla(42,85%,58%,0.5)]">
                 {getWeatherIcon(weather.code, true)}
@@ -382,10 +441,10 @@ export function WeatherPage() {
             </div>
             <div className="grid grid-cols-4 gap-2 mt-5 pt-5 border-t border-border/40">
               {[
-                { icon: <Droplets className="w-4 h-4" />, val: `${weather.humidity}%`, label: 'Р’РѕР»РѕРіС–СЃС‚СЊ' },
-                { icon: <Wind className="w-4 h-4" />, val: `${weather.wind_speed}РєРј/Рі`, label: 'Р’С–С‚РµСЂ' },
-                { icon: <Eye className="w-4 h-4" />, val: `${weather.visibility}РєРј`, label: 'Р’РёРґРёРј.' },
-                { icon: <Thermometer className="w-4 h-4" />, val: `${weather.feels_like}В°`, label: 'Р’С–РґС‡СѓРІ.' },
+                { icon: <Droplets className="w-4 h-4" />, val: `${weather.humidity}%`, label: 'Вологість' },
+                { icon: <Wind className="w-4 h-4" />, val: `${weather.wind_speed}км/г`, label: 'Вітер' },
+                { icon: <Eye className="w-4 h-4" />, val: `${weather.visibility}км`, label: 'Видим.' },
+                { icon: <Thermometer className="w-4 h-4" />, val: `${weather.feels_like}°`, label: 'Відчув.' },
               ].map((s, i) => (
                 <div key={i} className="text-center">
                   <div className="flex justify-center text-primary mb-1">{s.icon}</div>
@@ -397,13 +456,13 @@ export function WeatherPage() {
           </div>
 
           <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.05s' }}>
-            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">РЎСЊРѕРіРѕРґРЅС– РїРѕ РіРѕРґРёРЅР°С…</h2>
+            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Сьогодні по годинах</h2>
             <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
               {weather.hourly.map((h, i) => (
                 <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0 min-w-[52px]">
                   <span className="text-[11px] text-muted-foreground font-medium">{h.time}</span>
                   <div className="text-primary">{getWeatherIcon(h.code)}</div>
-                  <span className="text-sm font-bold">{h.temp}В°</span>
+                  <span className="text-sm font-bold">{h.temp}°</span>
                   {h.precipitation_probability > 0 && (
                     <span className="text-[10px] text-blue-400 font-medium">{h.precipitation_probability}%</span>
                   )}
@@ -413,20 +472,20 @@ export function WeatherPage() {
           </div>
 
           <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Р—Р°РІС‚СЂР°</h2>
+            <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Завтра</h2>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="text-gold/80">{getWeatherIcon(weather.tomorrow.code)}</div>
                 <div>
                   <p className="text-sm font-semibold">{weather.tomorrow.description}</p>
                   {weather.tomorrow.precipitation_probability > 0 && (
-                    <p className="text-xs text-blue-400">Р”РѕС‰: {weather.tomorrow.precipitation_probability}%</p>
+                    <p className="text-xs text-blue-400">Дощ: {weather.tomorrow.precipitation_probability}%</p>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-base font-bold flex-shrink-0">
-                <span className="text-foreground">{weather.tomorrow.temp_max}В°</span>
-                <span className="text-muted-foreground">{weather.tomorrow.temp_min}В°</span>
+                <span className="text-foreground">{weather.tomorrow.temp_max}°</span>
+                <span className="text-muted-foreground">{weather.tomorrow.temp_min}°</span>
               </div>
             </div>
           </div>
@@ -435,9 +494,9 @@ export function WeatherPage() {
             <div className="glass-strong rounded-2xl p-4 animate-slide-up border border-gold/30" style={{ animationDelay: '0.13s' }}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-gold/20 flex items-center justify-center">
-                  <span className="text-base">рџљ¶вЂЌв™ЂпёЏ</span>
+                  <span className="text-base">🚶‍♀️</span>
                 </div>
-                <h2 className="font-bold text-base text-gold-shimmer font-display">РўРІС–Р№ РјС–СЃСЊРєРёР№ РІРёС…С–Рґ СЃСЊРѕРіРѕРґРЅС–</h2>
+                <h2 className="font-bold text-base text-gold-shimmer font-display">Твій міський вихід сьогодні</h2>
               </div>
               <div className="space-y-2 mb-3">
                 <p className="text-sm font-medium">{commuteAdvice.morningOutdoor}</p>
@@ -463,10 +522,7 @@ export function WeatherPage() {
             </div>
           )}
 
-          <div
-            className={`rounded-2xl p-4 flex items-center gap-3 animate-slide-up ${advice.umbrella ? 'bg-accent/15 border border-accent/30' : 'bg-green-500/10 border border-green-500/20'}`}
-            style={{ animationDelay: '0.15s' }}
-          >
+          <div className={`rounded-2xl p-4 flex items-center gap-3 animate-slide-up ${advice.umbrella ? 'bg-accent/15 border border-accent/30' : 'bg-green-500/10 border border-green-500/20'}`} style={{ animationDelay: '0.15s' }}>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${advice.umbrella ? 'bg-accent/20' : 'bg-green-500/20'}`}>
               <Umbrella className={`w-5 h-5 ${advice.umbrella ? 'text-accent' : 'text-green-500'}`} />
             </div>
@@ -493,7 +549,7 @@ export function WeatherPage() {
           <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.25s' }}>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-                <span className="text-base">рџ‘џ</span>
+                <span className="text-base">👟</span>
               </div>
               <h2 className="font-bold text-base">Взуття</h2>
             </div>

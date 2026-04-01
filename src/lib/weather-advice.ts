@@ -37,7 +37,6 @@ const PROFILE = {
   minimalDresses: true,
   sundressesSummerOnly: true,
   avoidHeels: true,
-  winterOuterwear: 'winter-jacket',
 } as const;
 
 const MORNING_WINDOW = ['07:00', '08:00'] as const;
@@ -82,7 +81,6 @@ function buildSegment(
   const code = entries.length ? pickWorstCode(entries.map(entry => entry.code)) : fallback.code;
   const isSnow = code >= 600 && code < 700;
   const isRain = !isSnow && ((code >= 200 && code < 600) || precip >= 35);
-
   return { label, temp, feelsLike, precip, code, isRain, isSnow };
 }
 
@@ -95,11 +93,11 @@ function describeSegment(segment: SegmentSnapshot, windSpeed: number): string {
   ];
 
   if (segment.isSnow) parts.push('очікується сніг');
-  else if (segment.isRain) parts.push(`є ризик дощу ${segment.precip}%`);
+  else if (segment.isRain) parts.push(`ризик дощу ${segment.precip}%`);
   else parts.push('без істотних опадів');
 
-  if (windSpeed >= 24) parts.push(`вітер сильний, ${windSpeed} км/год`);
-  else if (windSpeed >= 14) parts.push(`є відчутний вітер, ${windSpeed} км/год`);
+  if (windSpeed >= 24) parts.push(`сильний вітер ${windSpeed} км/год`);
+  else if (windSpeed >= 14) parts.push(`відчутний вітер ${windSpeed} км/год`);
 
   return parts.join(' • ');
 }
@@ -117,7 +115,7 @@ function getComfortBand(feelsLike: number) {
 
 function pushUnique(target: string[], ...items: string[]) {
   for (const item of items) {
-    if (!target.includes(item)) target.push(item);
+    if (item && !target.includes(item)) target.push(item);
   }
 }
 
@@ -134,9 +132,9 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
     case 'deep-winter':
       pushUnique(
         layering,
-        'База: термобілизна верх + низ.',
-        'Середній шар: гольф і зверху щільний светр або тепла кофта.',
-        'Верхній шар: зимова куртка, без компромісів.',
+        'База: термобілизна верх і низ.',
+        'Середній шар: гольф і щільний светр або тепла кофта.',
+        'Верхній шар: зимова куртка.',
         'Низ: щільні джинси або утеплені штани.',
         'Аксесуари: шапка, шарф, рукавички, теплі шкарпетки.'
       );
@@ -148,7 +146,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
         'Середній шар: гольф, светр чи кофта.',
         'Верхній шар: зимова куртка; тепле пальто лише якщо воно справді зимове.',
         'Низ: джинси, за потреби з термошаром.',
-        'Аксесуари: шарф і теплі шкарпетки; шапку краще мати з собою.'
+        'Аксесуари: шарф і теплі шкарпетки, шапку краще мати з собою.'
       );
       break;
     case 'cold':
@@ -156,9 +154,9 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
         layering,
         'База: футболка або тонкий лонгслів.',
         'Середній шар: кофта, светр або гольф.',
-        'Верхній шар: зимова куртка або тепла демісезонна куртка.',
-        'Низ: джинси чи прямі щільні штани.',
-        'Аксесуари: легкий шарф, щільні шкарпетки.'
+        'Верхній шар: тепла демісезонна куртка або зимова куртка.',
+        'Низ: джинси чи щільні штани.',
+        'Додатково: щільні шкарпетки та легкий шарф.'
       );
       break;
     case 'cool':
@@ -166,7 +164,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
         layering,
         'База: футболка.',
         'Середній шар: кофта, кардиган або тонкий светр.',
-        'Верхній шар: куртка, тренч із теплим шаром під низ або легке пальто.',
+        'Верхній шар: куртка, тренч з теплим шаром під низ або легке пальто.',
         'Низ: джинси чи інші закриті штани.',
         'На вечір не завадить тонкий шарф.'
       );
@@ -175,7 +173,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
       pushUnique(
         layering,
         'База: футболка або тонкий лонгслів.',
-        'Другий шар: легка кофта, сорочка-оверсорочка або кардиган.',
+        'Другий шар: легка кофта, кардиган або сорочка.',
         'Верхній шар: легка куртка лише якщо чутливість до холоду висока або вітряно.',
         'Низ: джинси, чиноси або інші прямі штани.'
       );
@@ -185,7 +183,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
         layering,
         'База: футболка або легкий топ.',
         'Другий шар: тонка кофта в сумці на випадок прохолоднішого вечора.',
-        'Низ: легкі штани, джинси або спідниця міді, якщо хочеться.'
+        'Низ: легкі штани, джинси або спідниця міді.'
       );
       break;
     case 'hot':
@@ -194,7 +192,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
         layering,
         'База: легка футболка, майка або дихаюча сорочка.',
         'Низ: лляні штани, легкі широкі брюки або шорти відповідної довжини.',
-        PROFILE.sundressesSummerOnly ? 'Сарафан доречний лише в стабільно літню спеку; це опція, а не базовий сценарій.' : ''
+        PROFILE.sundressesSummerOnly ? 'Сарафан доречний лише в стабільну літню спеку; це опція, а не базовий сценарій.' : ''
       );
       break;
   }
@@ -203,21 +201,15 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
     pushUnique(
       layering,
       strongWind
-        ? 'Вітер сильний: потрібен щільний верхній шар, який тримає форму і закриває шию.'
-        : 'Через вітер краще закрити шию та обрати не надто тонкий верхній шар.'
+        ? 'Через сильний вітер верхній шар має щільно закривати шию і корпус.'
+        : 'Через вітер краще закрити шию та не виходити лише в одному тонкому шарі.'
     );
   }
 
   if (morning.isSnow || evening.isSnow) {
-    pushUnique(
-      layering,
-      'За снігу обирай верх із капюшоном і підошву з хорошим зчепленням.'
-    );
+    pushUnique(layering, 'За снігу обирай верх з капюшоном і підошву з хорошим зчепленням.');
   } else if (morning.isRain || evening.isRain || wettestPrecip >= 35) {
-    pushUnique(
-      layering,
-      'Якщо є ризик дощу, краще водовідштовхувальна куртка або верх, який не намокає миттєво.'
-    );
+    pushUnique(layering, 'Якщо є ризик дощу, краще водовідштовхувальна куртка або верх, який не промокає миттєво.');
   }
 
   const delta = evening.feelsLike - morning.feelsLike;
@@ -245,17 +237,11 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
     pushUnique(
       umbrellaDetail,
       `На ранок ризик дощу ${morning.precip}%.`,
-      evening.precip >= 25
-        ? `Увечері теж є шанс опадів ${evening.precip}%, тож парасоля точно не зайва.`
-        : 'На вечір істотних опадів не видно.'
+      evening.precip >= 25 ? `Увечері теж є шанс опадів ${evening.precip}%, тож парасоля точно не зайва.` : 'На вечір істотних опадів не видно.'
     );
   } else if (evening.isRain) {
     umbrellaNote = 'Зранку може бути сухо, але парасолю краще покласти в сумку на вечір.';
-    pushUnique(
-      umbrellaDetail,
-      'Ранок без критичних опадів.',
-      `На вечір ризик дощу ${evening.precip}%.`
-    );
+    pushUnique(umbrellaDetail, 'Ранок без критичних опадів.', `На вечір ризик дощу ${evening.precip}%.`);
   } else if (weather.humidity >= 88 && wettestPrecip >= 20) {
     umbrellaNote = 'Парасоля опційна, але вологість висока і дрібний дощ можливий.';
     pushUnique(
@@ -268,7 +254,7 @@ export function getMorningCommuteAdvice(weather: AdviceWeatherInput): CommuteAdv
   return {
     morningOutdoor: describeSegment(morning, weather.wind_speed),
     eveningOutdoor: describeSegment(evening, weather.wind_speed),
-    layering: layering.filter(Boolean),
+    layering,
     umbrellaNote,
     umbrellaDetail,
   };
@@ -291,7 +277,7 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
     case 'deep-winter':
       pushUnique(
         clothes,
-        'Термобілизна верх + низ.',
+        'Термобілизна верх і низ.',
         'Гольф або щільний базовий лонгслів.',
         'Теплий светр чи обʼємна кофта другим шаром.',
         'Зимова куртка.',
@@ -333,12 +319,12 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
         'Футболка або тонкий лонгслів як база.',
         'Светр, кофта чи гольф.',
         'Тепла куртка або комфортне пальто.',
-        'Джинси, костюмні щільні брюки або інші закриті штани.'
+        'Джинси, щільні брюки або інші закриті штани.'
       );
       pushUnique(
         shoes,
         'Закриті кросівки або черевики на плоскій підошві.',
-        'В дощ чи сльоту краще черевики.'
+        'У дощ чи сльоту краще черевики.'
       );
       pushUnique(
         extras,
@@ -377,10 +363,7 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
         'Кросівки, мокасини, лофери чи балетки на плоскій підошві.',
         'Якщо день активний, кросівки найпрактичніші.'
       );
-      pushUnique(
-        extras,
-        'Легкий шар у сумку на вечір або кондиціоновані приміщення.'
-      );
+      pushUnique(extras, 'Легкий шар у сумку на вечір або кондиціоновані приміщення.');
       break;
     case 'warm':
       pushUnique(
@@ -394,10 +377,7 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
         'Легкі кросівки, мокасини, сандалі на плоскій підошві.',
         'Якщо планується багато ходьби, краще кросівки або мʼякі сандалі.'
       );
-      pushUnique(
-        extras,
-        'Окуляри від сонця в ясну погоду.'
-      );
+      pushUnique(extras, 'Окуляри від сонця в ясну погоду.');
       break;
     case 'hot':
     case 'heat':
@@ -440,7 +420,7 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
     );
     pushUnique(
       shoes,
-      'В дощ краще закрите взуття, яке не промокає відразу.',
+      'У дощ краще закрите взуття, яке не промокає відразу.',
       'Світлі тканинні кросівки без захисту краще залишити вдома.'
     );
     pushUnique(extras, 'Компактна парасоля.');
@@ -469,17 +449,11 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
   }
 
   if (effectiveTemp <= 10) {
-    pushUnique(
-      avoid,
-      'Тонкі відкриті щиколотки й надто короткий верх без другого шару краще відкласти.'
-    );
+    pushUnique(avoid, 'Тонкі відкриті щиколотки й надто короткий верх без другого шару краще відкласти.');
   }
 
   if (isRain || isSnow) {
-    pushUnique(
-      avoid,
-      'Взуття, яке слизьке або швидко намокає, сьогодні невдале.'
-    );
+    pushUnique(avoid, 'Взуття, яке слизьке або швидко намокає, сьогодні невдале.');
   }
 
   const umbrella = isRain || weather.humidity >= 88;
@@ -493,7 +467,7 @@ export function getAdvice(weather: AdviceWeatherInput): Advice {
   if (comfortBand === 'deep-winter' || comfortBand === 'winter') {
     summary = 'День під зимову збірку: тепло треба набирати шарами, а верхнім одягом має бути саме зимова куртка.';
   } else if (comfortBand === 'cold' || comfortBand === 'cool') {
-    summary = 'День для демісезонного комплекту: база + теплий другий шар + закрите взуття працюватимуть краще за один товстий шар.';
+    summary = 'День для демісезонного комплекту: база + теплий другий шар + закрите взуття працюють краще за один товстий шар.';
   } else if (comfortBand === 'warm') {
     summary = 'Можна тримати образ легким, але мати запасний шар на вітер, вечір або приміщення.';
   } else if (comfortBand === 'hot' || comfortBand === 'heat') {
