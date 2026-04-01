@@ -12,9 +12,13 @@ interface DashboardPageProps {
   currentUserId: string;
   householdUsers: CFHouseholdUser[];
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask: (id: string) => void;
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
+  onDeleteList: (listId: string) => void;
+  onArchiveList: (listId: string) => void;
+  onUnarchiveList: (listId: string) => void;
   onAddTask: () => void;
   onAddToList: () => void;
   onGoToTasks: () => void;
@@ -22,7 +26,7 @@ interface DashboardPageProps {
   onGoToWeather: () => void;
 }
 
-export function DashboardPage({ tasks, lists, profile, currentUserId, householdUsers, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
+export function DashboardPage({ tasks, lists, profile, currentUserId, householdUsers, onUpdateTask, onDeleteTask, onToggleItem, onDeleteItem, onAddItem, onDeleteList, onArchiveList, onUnarchiveList, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -37,7 +41,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
 
   const pinnedTasks = tasks.filter(t => t.pinned && t.status !== 'done');
   const displayTasks = [...new Map([...pinnedTasks, ...todayTasks].map(t => [t.id, t])).values()].slice(0, 5);
-  const activeLists = lists.filter(l => l.type === 'daily' || l.pinned).slice(0, 2);
+  const activeLists = lists.filter(l => !l.archived && (l.type === 'daily' || l.pinned)).slice(0, 2);
   const toBuyCount = lists.reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0);
   const doneToday = tasks.filter(t => t.status === 'done').length;
 
@@ -140,7 +144,8 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
               <TaskCard key={task.id} task={task}
                 currentUserId={currentUserId}
                 householdUsers={householdUsers}
-                onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })} />
+                onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })}
+                onDelete={() => onDeleteTask(task.id)} />
             ))}
           </div>
         </section>
@@ -158,7 +163,10 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
               <ShoppingListCard key={list.id} list={list}
                 onToggleItem={itemId => onToggleItem(list.id, itemId)}
                 onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
-                onAddItem={item => onAddItem(list.id, item)} />
+                onAddItem={item => onAddItem(list.id, item)}
+                onDelete={() => onDeleteList(list.id)}
+                onArchive={() => onArchiveList(list.id)}
+                onUnarchive={() => onUnarchiveList(list.id)} />
             ))}
           </div>
         </section>

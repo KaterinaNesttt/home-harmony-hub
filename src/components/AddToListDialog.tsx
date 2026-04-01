@@ -10,7 +10,7 @@ interface AddToListDialogProps {
   onClose: () => void;
   lists: ShoppingList[];
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
-  onAddList: (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>) => void;
+  onAddList: (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>) => Promise<string>;
 }
 
 type Mode = 'existing' | 'new';
@@ -28,10 +28,6 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
   const [newTitle, setNewTitle] = useState('');
   const [newType, setNewType] = useState<ShoppingListType>('daily');
   const [newCategory, setNewCategory] = useState<Category>('Дім');
-
-  // Pending item to add after new list appears in lists prop
-  const pendingItem = useRef<{ name: string; quantity: string; url?: string; note?: string } | null>(null);
-  const pendingListTitle = useRef<string>('');
 
   // Suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -58,25 +54,6 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
     setSuggestions(getSuggestions(name));
   }, [name]);
 
-  // Watch for newly created list to appear, then add the pending item
-  useEffect(() => {
-    if (!pendingItem.current || !pendingListTitle.current) return;
-    const newList = lists.find(l => l.title === pendingListTitle.current);
-    if (newList) {
-      onAddItem(newList.id, {
-        name: pendingItem.current.name,
-        quantity: pendingItem.current.quantity,
-        bought: false,
-        url: pendingItem.current.url,
-        note: pendingItem.current.note,
-      });
-      recordItem(pendingItem.current.name);
-      pendingItem.current = null;
-      pendingListTitle.current = '';
-      onClose();
-    }
-  }, [lists]);
-
   if (!open) return null;
 
   const selectedList = lists.find(l => l.id === listId);
@@ -97,17 +74,21 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
       recordItem(name.trim());
       onClose();
     } else {
-      // New list mode — create list, then useEffect above will add the item
+      // New list mode — create list, get real id, then add item
       if (!newTitle.trim()) return;
-      pendingItem.current = {
+      const item = {
         name: name.trim(),
         quantity: quantity.trim() || '1',
+        bought: false as const,
         url: url.trim() || undefined,
         note: note.trim() || undefined,
       };
-      pendingListTitle.current = newTitle.trim();
-      onAddList({ title: newTitle.trim(), type: newType, category: newCategory, access: 'shared', pinned: false });
-      // onClose will be called by useEffect after item is added
+      onAddList({ title: newTitle.trim(), type: newType, category: newCategory, access: 'shared', pinned: false })
+        .then(realId => {
+          onAddItem(realId, item);
+          recordItem(item.name);
+          onClose();
+        });
     }
   };
 

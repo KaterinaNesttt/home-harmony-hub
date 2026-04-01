@@ -97,6 +97,7 @@ export function TasksPage({ tasks, currentUserId, householdUsers, onUpdateTask, 
               currentUserId={currentUserId}
               householdUsers={householdUsers}
               onToggleDone={() => onUpdateTask(task.id, { status: task.status==='done' ? 'unseen' : 'done' })}
+              onDelete={() => onDeleteTask(task.id)}
             />
           ))
         )}

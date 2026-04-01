@@ -25,7 +25,7 @@ const Index = () => {
 
   const { user, profile, householdUsers, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
-  const { lists, addList, addItem, toggleItem, deleteItem } = useShoppingStore(!!user);
+  const { lists, addList, addItem, toggleItem, deleteItem, deleteList, archiveList, unarchiveList } = useShoppingStore(!!user);
   const {
     items: wardrobeItems,
     loading: wardrobeLoading,
@@ -42,10 +42,7 @@ const Index = () => {
 
   // addList wrapper that returns the new list id for AddToListDialog
   const addListAndReturn = async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>): Promise<string> => {
-    await addList(list);
-    // After optimistic update, the new list will be first in the array
-    // We return a sentinel; AddToListDialog handles the fallback via lists prop update
-    return '';
+    return addList(list);
   };
 
   if (loading) {
@@ -113,7 +110,11 @@ const Index = () => {
             <DashboardPage
               tasks={tasks} lists={lists} profile={profile} currentUserId={user.id} householdUsers={householdUsers}
               onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
               onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
+              onDeleteList={deleteList}
+              onArchiveList={archiveList}
+              onUnarchiveList={unarchiveList}
               onAddTask={() => setShowAddTask(true)}
               onAddToList={() => setShowAddToList(true)}
               onGoToTasks={() => changeTab('tasks')}
@@ -128,7 +129,10 @@ const Index = () => {
           {tab === 'shopping' && (
             <ShoppingPage lists={lists}
               onAddList={() => setShowAddList(true)}
-              onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem} />
+              onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
+              onDeleteList={deleteList}
+              onArchiveList={archiveList}
+              onUnarchiveList={unarchiveList} />
           )}
           {tab === 'search' && (
             <SearchPage tasks={tasks} lists={lists} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask} />

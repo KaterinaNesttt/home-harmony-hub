@@ -11,26 +11,39 @@ interface ShoppingPageProps {
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
+  onDeleteList: (listId: string) => void;
+  onArchiveList: (listId: string) => void;
+  onUnarchiveList: (listId: string) => void;
 }
 
 const filters: { id: ListFilter; label: string; emoji: string }[] = [
-  { id: 'all',      label: 'Всі',     emoji: '📋' },
+  { id: 'all',      label: 'Всі',      emoji: '📋' },
   { id: 'daily',    label: 'Сьогодні', emoji: '📅' },
   { id: 'global',   label: 'Майбутні', emoji: '📦' },
-  { id: 'wishlist', label: 'Хотєлки', emoji: '💫' },
+  { id: 'wishlist', label: 'Хотєлки',  emoji: '💫' },
 ];
 
-export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem }: ShoppingPageProps) {
+export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem, onDeleteList, onArchiveList, onUnarchiveList }: ShoppingPageProps) {
   const [filter, setFilter] = useState<ListFilter>('daily');
 
-  const filtered = filter === 'all' ? lists : lists.filter(l => l.type === filter);
-  const sorted = [...filtered].sort((a,b) => (b.pinned?1:0)-(a.pinned?1:0));
+  const filtered = (() => {
+    if (filter === 'all') return lists; // show all, including archived
+    return lists.filter(l => l.type === filter && !l.archived);
+  })();
 
-  const totalToBuy = lists.reduce((s,l) => s + l.items.filter(i=>!i.bought).length, 0);
+  const sorted = [...filtered].sort((a, b) => {
+    // archived always at bottom
+    if (a.archived && !b.archived) return 1;
+    if (!a.archived && b.archived) return -1;
+    return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+  });
+
+  const totalToBuy = lists
+    .filter(l => !l.archived)
+    .reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0);
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-display">Покупки</h1>
@@ -62,6 +75,11 @@ export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onA
         ))}
       </div>
 
+      {/* Hint */}
+      <p className="text-xs text-muted-foreground/60 text-center -mt-1">
+        ← свайп вліво — видалити · свайп вправо — архів
+      </p>
+
       {/* Lists */}
       <div className="space-y-3 stagger">
         {sorted.length === 0 ? (
@@ -78,6 +96,9 @@ export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onA
               onToggleItem={itemId => onToggleItem(list.id, itemId)}
               onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
               onAddItem={item => onAddItem(list.id, item)}
+              onDelete={() => onDeleteList(list.id)}
+              onArchive={() => onArchiveList(list.id)}
+              onUnarchive={() => onUnarchiveList(list.id)}
             />
           ))
         )}

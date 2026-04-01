@@ -9,8 +9,6 @@ import {
   RefreshCw,
   Shirt,
   Sun,
-  Sunrise,
-  Sunset,
   Thermometer,
   MapPin,
   X,
@@ -322,7 +320,7 @@ export function WeatherPage({ wardrobeCount, lastSuggestion, onSuggestOutfit, on
         </button>
       </div>
 
-      <div className="glass-strong rounded-3xl p-6 animate-scale-in space-y-5">
+      <div className="glass-strong rounded-3xl p-6 animate-scale-in">
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="flex items-end gap-2">
@@ -335,39 +333,35 @@ export function WeatherPage({ wardrobeCount, lastSuggestion, onSuggestOutfit, on
           <div className="text-gold/80 drop-shadow-[0_0_20px_hsla(42,85%,58%,0.5)]">{getWeatherIcon(weather.weatherCode, true)}</div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div className="glass rounded-2xl p-3 text-center">
-            <Droplets className="w-4 h-4 text-primary mx-auto mb-1" />
-            <p className="text-sm font-bold">{weather.precipChance}%</p>
-            <p className="text-[10px] text-muted-foreground">Опади</p>
-          </div>
-          <div className="glass rounded-2xl p-3 text-center">
-            <Wind className="w-4 h-4 text-primary mx-auto mb-1" />
-            <p className="text-sm font-bold">{weather.windSpeed} км/г</p>
-            <p className="text-[10px] text-muted-foreground">Вітер</p>
-          </div>
-          <div className="glass rounded-2xl p-3 text-center">
-            <Eye className="w-4 h-4 text-primary mx-auto mb-1" />
-            <p className="text-sm font-bold">UV {weather.uvIndex}</p>
-            <p className="text-[10px] text-muted-foreground">Індекс</p>
-          </div>
+        <div className="grid grid-cols-4 gap-2 pt-5 border-t border-border/40">
+          {[
+            { icon: <Droplets className="w-4 h-4" />, val: `${weather.humidity}%`, label: 'Вологість' },
+            { icon: <Wind className="w-4 h-4" />, val: `${weather.windSpeed}км/г`, label: 'Вітер' },
+            { icon: <Eye className="w-4 h-4" />, val: `${weather.visibility}км`, label: 'Видим.' },
+            { icon: <Thermometer className="w-4 h-4" />, val: `${weather.feelsLike}°`, label: 'Відчув.' },
+          ].map((s, i) => (
+            <div key={i} className="text-center">
+              <div className="flex justify-center text-primary mb-1">{s.icon}</div>
+              <p className="text-sm font-bold">{s.val}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </div>
+          ))}
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="glass rounded-2xl p-3 flex items-center gap-3">
-            <Sunrise className="w-4 h-4 text-gold flex-shrink-0" />
-            <div>
-              <p className="text-xs text-muted-foreground">Схід</p>
-              <p className="text-sm font-semibold">{weather.sunrise}</p>
+      <div className="glass rounded-2xl p-4 animate-slide-up" style={{ animationDelay: '0.05s' }}>
+        <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Сьогодні по годинах</h2>
+        <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+          {weather.hourly.map((h, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5 flex-shrink-0 min-w-[52px]">
+              <span className="text-[11px] text-muted-foreground font-medium">{h.time}</span>
+              <div className="text-primary">{getWeatherIcon(h.code)}</div>
+              <span className="text-sm font-bold">{h.temp}°</span>
+              {h.precipitation_probability > 0 && (
+                <span className="text-[10px] text-blue-400 font-medium">{h.precipitation_probability}%</span>
+              )}
             </div>
-          </div>
-          <div className="glass rounded-2xl p-3 flex items-center gap-3">
-            <Sunset className="w-4 h-4 text-gold flex-shrink-0" />
-            <div>
-              <p className="text-xs text-muted-foreground">Захід</p>
-              <p className="text-sm font-semibold">{weather.sunset}</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 

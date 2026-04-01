@@ -142,7 +142,7 @@ export function useShoppingStore(authenticated: boolean) {
     });
   }, [authenticated]);
 
-  const addList = useCallback(async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>) => {
+  const addList = useCallback(async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>): Promise<string> => {
     const tempId = generateId();
     const optimistic: ShoppingList = { ...list, id: tempId, createdAt: new Date().toISOString(), items: [] };
     setLists((prev) => [optimistic, ...prev]);
@@ -151,12 +151,28 @@ export function useShoppingStore(authenticated: boolean) {
       type: list.type as CFList['type'],
       access: list.access as CFList['access'],
     });
-    if (data) setLists((prev) => prev.map((item) => (item.id === tempId ? cfListToList(data) : item)));
+    if (data) {
+      setLists((prev) => prev.map((item) => (item.id === tempId ? cfListToList(data) : item)));
+      return data.id;
+    }
+    return tempId;
   }, []);
 
   const deleteList = useCallback(async (id: string) => {
     setLists((prev) => prev.filter((list) => list.id !== id));
     await cfLists.remove(id);
+  }, []);
+
+  const archiveList = useCallback((id: string) => {
+    setLists((prev) =>
+      prev.map((list) => (list.id === id ? { ...list, archived: true } : list)),
+    );
+  }, []);
+
+  const unarchiveList = useCallback((id: string) => {
+    setLists((prev) =>
+      prev.map((list) => (list.id === id ? { ...list, archived: false } : list)),
+    );
   }, []);
 
   const addItem = useCallback(async (listId: string, item: Omit<ShoppingItem, 'id'>) => {
@@ -224,7 +240,7 @@ export function useShoppingStore(authenticated: boolean) {
     await cfLists.deleteItem(listId, itemId);
   }, []);
 
-  return { lists, addList, deleteList, addItem, toggleItem, deleteItem };
+  return { lists, addList, deleteList, archiveList, unarchiveList, addItem, toggleItem, deleteItem };
 }
 
 export function useWardrobeStore(authenticated: boolean) {

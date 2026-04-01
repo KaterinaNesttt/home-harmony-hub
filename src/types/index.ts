@@ -59,6 +59,7 @@ export interface ShoppingList {
   category: Category;
   access: AccessType;
   pinned: boolean;
+  archived?: boolean;
   createdById?: string;
   createdByName?: string;
   createdAt: string;
