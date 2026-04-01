@@ -11,7 +11,7 @@ import { SearchPage } from '@/pages/SearchPage';
 import { AccountPage } from '@/pages/AccountPage';
 import { WeatherPage } from '@/pages/WeatherPage';
 import { AuthPage } from '@/pages/AuthPage';
-import { useTaskStore, useShoppingStore } from '@/store/useStore';
+import { useTaskStore, useShoppingStore, useWardrobeStore } from '@/store/useStore';
 import { useAuth } from '@/hooks/useAuth';
 import type { ShoppingList } from '@/types';
 
@@ -26,6 +26,17 @@ const Index = () => {
   const { user, profile, householdUsers, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
   const { lists, addList, addItem, toggleItem, deleteItem } = useShoppingStore(!!user);
+  const {
+    items: wardrobeItems,
+    loading: wardrobeLoading,
+    lastSuggestion,
+    addItem: addWardrobeItem,
+    updateItem: updateWardrobeItem,
+    deleteItem: deleteWardrobeItem,
+    uploadPhoto: uploadWardrobePhoto,
+    suggestOutfit,
+    saveOutfit,
+  } = useWardrobeStore(!!user);
 
   const changeTab = (t: Tab) => setTab(t);
 
@@ -122,7 +133,14 @@ const Index = () => {
           {tab === 'search' && (
             <SearchPage tasks={tasks} lists={lists} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask} />
           )}
-          {tab === 'weather' && <WeatherPage />}
+          {tab === 'weather' && (
+            <WeatherPage
+              wardrobeCount={wardrobeItems.length}
+              lastSuggestion={lastSuggestion}
+              onSuggestOutfit={suggestOutfit}
+              onSaveOutfit={saveOutfit}
+            />
+          )}
           {tab === 'account' && (
             <AccountPage
               profile={profile}
@@ -133,6 +151,12 @@ const Index = () => {
               taskCount={tasks.filter(t => t.status !== 'done').length}
               doneCount={tasks.filter(t => t.status === 'done').length}
               listCount={lists.length}
+              wardrobeItems={wardrobeItems}
+              wardrobeLoading={wardrobeLoading}
+              onAddWardrobeItem={addWardrobeItem}
+              onUpdateWardrobeItem={updateWardrobeItem}
+              onDeleteWardrobeItem={deleteWardrobeItem}
+              onUploadWardrobePhoto={uploadWardrobePhoto}
             />
           )}
         </main>

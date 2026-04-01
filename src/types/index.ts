@@ -4,8 +4,22 @@ export type Assignee = string | 'both';
 export type AccessType = 'shared' | 'private';
 export type ShoppingListType = 'daily' | 'global' | 'wishlist';
 
-export const CATEGORIES = ['Дім', 'Робота', 'Особисте', 'Фінанси', 'Здоров\'я', 'Інше'] as const;
+export const CATEGORIES = ['Дім', 'Робота', 'Особисте', 'Фінанси', "Здоров'я", 'Інше'] as const;
 export type Category = typeof CATEGORIES[number];
+
+export const WARDROBE_CATEGORIES = [
+  'Верхній одяг',
+  'Светр/кофта',
+  'Футболка',
+  'Штани/джинси',
+  'Спідниця',
+  'Взуття',
+  'Аксесуар',
+] as const;
+export type WardrobeCategory = typeof WARDROBE_CATEGORIES[number];
+
+export const WARDROBE_SEASONS = ['Весна', 'Літо', 'Осінь', 'Зима'] as const;
+export type WardrobeSeason = typeof WARDROBE_SEASONS[number];
 
 export interface Task {
   id: string;
@@ -48,4 +62,27 @@ export interface ShoppingList {
   createdById?: string;
   createdByName?: string;
   createdAt: string;
+}
+
+export interface WardrobeItem {
+  id: string;
+  userId: string;
+  name: string;
+  category: WardrobeCategory;
+  seasons: WardrobeSeason[];
+  colors?: string | null;
+  tempMin?: number | null;
+  tempMax?: number | null;
+  description?: string | null;
+  photoKey?: string | null;
+  photoUrl?: string | null;
+  createdAt: string;
+}
+
+export interface WardrobeSuggestion {
+  source: 'ai' | 'fallback';
+  outfit: string[];
+  items: WardrobeItem[];
+  explanation: string;
+  availableCount: number;
 }

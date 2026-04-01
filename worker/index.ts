@@ -1,12 +1,13 @@
 /**
  * Home Harmony Hub - Cloudflare Worker API
- * Replaces Supabase backend entirely.
- * DB: D1 (home-harmony-hub, id: 77b045c3-fe39-42d2-b279-9d02659c359a)
+ * DB: D1 (home-harmony-hub)
  */
 
 export interface Env {
   DB: D1Database;
   JWT_SECRET: string;
+  WARDROBE_BUCKET?: R2Bucket;
+  ANTHROPIC_API_KEY?: string;
 }
 
 type UserRow = {
@@ -22,11 +23,34 @@ type AccessControlledRow = {
   access: 'shared' | 'private';
 };
 
+type WardrobeItemRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  category: string;
+  seasons: string;
+  colors: string | null;
+  temp_min: number | null;
+  temp_max: number | null;
+  description: string | null;
+  photo_key: string | null;
+  created_at: string;
+};
+
+type WardrobeSuggestion = {
+  outfit: string[];
+  explanation: string;
+};
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
+
+const DRESS_REGEX = /сукн|платт|dress/i;
+const SUNDRESS_REGEX = /сарафан/i;
+const HEELS_REGEX = /підбор|каблук|heels?|stiletto/i;
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -35,8 +59,157 @@ function json(data: unknown, status = 200) {
   });
 }
 
-function err(msg: string, status = 400) {
-  return json({ error: msg }, status);
+function err(message: string, status = 400) {
+  return json({ error: message }, status);
+}
+
+function extFromContentType(contentType: string) {
+  if (contentType.includes('png')) return 'png';
+  if (contentType.includes('webp')) return 'webp';
+  if (contentType.includes('gif')) return 'gif';
+  return 'jpg';
+}
+
+function itemPhotoUrl(req: Request, itemId: string) {
+  return `${new URL(req.url).origin}/api/wardrobe/photo/${itemId}`;
+}
+
+function parseJsonArray(value: string | null | undefined): string[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizePinned<T extends { pinned?: number | boolean | null }>(row: T) {
+  return { ...row, pinned: row.pinned === 1 || row.pinned === true };
+}
+
+function normalizeBought<T extends { bought?: number | boolean | null }>(row: T) {
+  return { ...row, bought: row.bought === 1 || row.bought === true };
+}
+
+function canAccessRow(userId: string, row: AccessControlledRow | null) {
+  return !!row && (row.user_id === userId || row.access === 'shared');
+}
+
+function currentSeason(date = new Date()) {
+  const month = date.getMonth() + 1;
+  if (month === 12 || month <= 2) return 'Зима';
+  if (month >= 3 && month <= 5) return 'Весна';
+  if (month >= 6 && month <= 8) return 'Літо';
+  return 'Осінь';
+}
+
+function isDressLike(item: Pick<WardrobeItemRow, 'name' | 'category'>) {
+  return DRESS_REGEX.test(item.name) || DRESS_REGEX.test(item.category);
+}
+
+function isSundressLike(item: Pick<WardrobeItemRow, 'name' | 'category'>) {
+  return SUNDRESS_REGEX.test(item.name) || SUNDRESS_REGEX.test(item.category);
+}
+
+function isHeelsLike(item: Pick<WardrobeItemRow, 'name' | 'description'>) {
+  return HEELS_REGEX.test(item.name) || HEELS_REGEX.test(item.description || '');
+}
+
+function wardrobeItemToResponse(req: Request, row: WardrobeItemRow) {
+  return {
+    ...row,
+    seasons: parseJsonArray(row.seasons),
+    photo_url: row.photo_key ? itemPhotoUrl(req, row.id) : null,
+  };
+}
+
+function isSeasonAllowed(item: WardrobeItemRow, season: string) {
+  const seasons = parseJsonArray(item.seasons);
+  return seasons.length === 0 || seasons.includes(season);
+}
+
+function isTempAllowed(item: WardrobeItemRow, temp: number) {
+  if (item.temp_min !== null && temp < item.temp_min) return false;
+  if (item.temp_max !== null && temp > item.temp_max) return false;
+  return true;
+}
+
+function scoreForTemp(item: WardrobeItemRow, temp: number) {
+  const min = item.temp_min ?? temp;
+  const max = item.temp_max ?? temp;
+  return Math.abs((min + max) / 2 - temp);
+}
+
+function chooseBest(items: WardrobeItemRow[], temp: number, predicate?: (item: WardrobeItemRow) => boolean) {
+  const filtered = predicate ? items.filter(predicate) : items;
+  return filtered.sort((a, b) => scoreForTemp(a, temp) - scoreForTemp(b, temp))[0] ?? null;
+}
+
+function buildFallbackSuggestion(
+  items: WardrobeItemRow[],
+  temp: number,
+  tempMin: number,
+  tempMax: number,
+  weatherDesc: string,
+  precip: number,
+  windSpeed: number,
+  season: string,
+) {
+  const available = items.filter((item) => {
+    if (!isSeasonAllowed(item, season)) return false;
+    if (!isTempAllowed(item, temp)) return false;
+    if (isHeelsLike(item)) return false;
+    if (isDressLike(item)) return false;
+    if (isSundressLike(item) && !(temp > 22 && season === 'Літо')) return false;
+    return true;
+  });
+
+  const outerwearRequired = temp < 15 || precip > 40;
+  const winterJacketOnly = temp < 3;
+  const deepWinter = temp < 0;
+  const outerwear = outerwearRequired
+    ? chooseBest(available, temp, (item) => {
+        if (item.category !== 'Верхній одяг') return false;
+        const lower = `${item.name} ${item.description || ''}`.toLowerCase();
+        if (winterJacketOnly) return /куртк|пуховик/.test(lower);
+        if (temp >= 15 && temp <= 19) return /пальт|тренч/.test(lower);
+        if (temp >= 10 && temp <= 14) return /куртк|пальт|тренч/.test(lower);
+        if (temp >= 4 && temp <= 6) return /куртк/.test(lower);
+        return true;
+      })
+    : null;
+
+  const top = chooseBest(available, temp, (item) => item.category === 'Светр/кофта' || item.category === 'Футболка');
+  const bottom = chooseBest(available, temp, (item) => item.category === 'Штани/джинси' || (temp > 25 && item.category === 'Спідниця'));
+  const shoes = chooseBest(available, temp, (item) => item.category === 'Взуття');
+  const accessory = chooseBest(available, temp, (item) => item.category === 'Аксесуар');
+
+  const selected = [outerwear, top, bottom, shoes, accessory].filter((item): item is WardrobeItemRow => !!item);
+  const explanation = [
+    `Зараз ${temp}°C, вдень від ${tempMin}°C до ${tempMax}°C.`,
+    weatherDesc ? `Погода: ${weatherDesc}.` : '',
+    outerwear
+      ? deepWinter
+        ? 'Для цього сценарію потрібна саме зимова куртка.'
+        : outerwearRequired
+          ? `Верхній шар додано через ${precip > 40 ? 'ризик опадів' : 'прохолоду'}.`
+          : ''
+      : outerwearRequired
+        ? 'У гардеробі не знайшла ідеального верхнього шару під цю погоду.'
+        : '',
+    windSpeed > 10 ? 'Через вітер варто додати шарф або хустку.' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return {
+    available,
+    suggestion: {
+      outfit: selected.map((item) => item.id),
+      explanation,
+    },
+  };
 }
 
 async function signJwt(payload: Record<string, unknown>, secret: string): Promise<string> {
@@ -48,7 +221,7 @@ async function signJwt(payload: Record<string, unknown>, secret: string): Promis
     new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign']
+    ['sign'],
   );
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data));
   const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -65,9 +238,9 @@ async function verifyJwt(token: string, secret: string): Promise<Record<string, 
       new TextEncoder().encode(secret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['verify']
+      ['verify'],
     );
-    const sig = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const sig = Uint8Array.from(atob(parts[2].replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
     const valid = await crypto.subtle.verify('HMAC', key, sig, new TextEncoder().encode(data));
     if (!valid) return null;
     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
@@ -80,7 +253,9 @@ async function verifyJwt(token: string, secret: string): Promise<Record<string, 
 
 async function hashPassword(password: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password + 'hhh-salt-2024'));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 async function getUser(req: Request, env: Env): Promise<UserRow | null> {
@@ -88,25 +263,15 @@ async function getUser(req: Request, env: Env): Promise<UserRow | null> {
   if (!auth?.startsWith('Bearer ')) return null;
   const payload = await verifyJwt(auth.slice(7), env.JWT_SECRET || 'dev-secret-change-me');
   if (!payload?.sub) return null;
-  const row = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE id=?')
-    .bind(payload.sub)
-    .first<UserRow>();
+  const row = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE id=?').bind(payload.sub).first<UserRow>();
   return row || null;
 }
 
 async function listHouseholdUsers(env: Env): Promise<UserRow[]> {
   const rows = await env.DB.prepare(
-    'SELECT id, email, display_name, avatar_url FROM users ORDER BY display_name COLLATE NOCASE ASC LIMIT 2'
+    'SELECT id, email, display_name, avatar_url FROM users ORDER BY display_name COLLATE NOCASE ASC LIMIT 2',
   ).all<UserRow>();
   return rows.results || [];
-}
-
-function normalizePinned<T extends { pinned?: number | boolean | null }>(row: T) {
-  return { ...row, pinned: row.pinned === 1 || row.pinned === true };
-}
-
-function normalizeBought<T extends { bought?: number | boolean | null }>(row: T) {
-  return { ...row, bought: row.bought === 1 || row.bought === true };
 }
 
 async function getAccessibleTask(env: Env, taskId: string): Promise<AccessControlledRow | null> {
@@ -117,8 +282,72 @@ async function getAccessibleList(env: Env, listId: string): Promise<AccessContro
   return env.DB.prepare('SELECT id, user_id, access FROM shopping_lists WHERE id=?').bind(listId).first<AccessControlledRow>();
 }
 
-function canAccessRow(userId: string, row: AccessControlledRow | null) {
-  return !!row && (row.user_id === userId || row.access === 'shared');
+async function getWardrobeItem(env: Env, itemId: string) {
+  return env.DB.prepare(
+    'SELECT id, user_id, name, category, seasons, colors, temp_min, temp_max, description, photo_key, created_at FROM wardrobe_items WHERE id=?',
+  ).bind(itemId).first<WardrobeItemRow>();
+}
+
+function extractJsonObject(text: string): WardrobeSuggestion | null {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1 || end <= start) return null;
+  try {
+    const parsed = JSON.parse(text.slice(start, end + 1));
+    if (!Array.isArray(parsed.outfit) || typeof parsed.explanation !== 'string') return null;
+    return {
+      outfit: parsed.outfit.filter((id: unknown): id is string => typeof id === 'string'),
+      explanation: parsed.explanation,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function callAnthropicSuggestion(
+  apiKey: string,
+  temp: number,
+  tempMin: number,
+  tempMax: number,
+  weatherDesc: string,
+  availableItems: Array<ReturnType<typeof wardrobeItemToResponse>>,
+) {
+  const prompt = `Ти стиліст для жінки 30 років. Зараз ${temp}°C, ${weatherDesc}, протягом дня від ${tempMin}°C до ${tempMax}°C.
+
+Доступний гардероб:
+${JSON.stringify(availableItems)}
+
+Правила:
+- НЕ рекомендуй сукні та плаття
+- НЕ рекомендуй взуття на підборах
+- Сарафани тільки при T > +22°C
+- При T < +5°C обов'язково тепла куртка, НЕ пальто
+- При T від +10°C до +19°C — пальто або тренч
+- Обери 1 образ: верх + низ + взуття + аксесуари (опційно)
+- Поверни ТІЛЬКИ JSON: { "outfit": [id1, id2, id3], "explanation": "короткий текст чому" }`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      temperature: 0.2,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Anthropic request failed: ${response.status}`);
+  }
+
+  const data = await response.json<{ content?: Array<{ type: string; text?: string }> }>();
+  const text = data.content?.find((part) => part.type === 'text')?.text || '';
+  return extractJsonObject(text);
 }
 
 export default {
@@ -128,7 +357,7 @@ export default {
     const method = req.method;
 
     if (method === 'OPTIONS') return new Response(null, { headers: CORS });
-
+    
     if (path === '/api/auth/signup' && method === 'POST') {
       const { email, password, display_name } = await req.json<{ email: string; password: string; display_name: string }>();
       if (!email || !password) return err('Email and password required');
@@ -141,7 +370,7 @@ export default {
         .run();
       const token = await signJwt(
         { sub: id, email, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 },
-        env.JWT_SECRET || 'dev-secret-change-me'
+        env.JWT_SECRET || 'dev-secret-change-me',
       );
       return json({ token, user: { id, email, display_name: display_name || email.split('@')[0] } });
     }
@@ -155,7 +384,7 @@ export default {
       if (!user) return err('Invalid credentials', 401);
       const token = await signJwt(
         { sub: user.id, email, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 },
-        env.JWT_SECRET || 'dev-secret-change-me'
+        env.JWT_SECRET || 'dev-secret-change-me',
       );
       return json({ token, user });
     }
@@ -171,13 +400,19 @@ export default {
       if (!user) return err('Unauthorized', 401);
       const updates = await req.json<{ display_name?: string; avatar_url?: string }>();
       const fields: string[] = [];
-      const vals: unknown[] = [];
-      if (updates.display_name !== undefined) { fields.push('display_name=?'); vals.push(updates.display_name); }
-      if (updates.avatar_url !== undefined) { fields.push('avatar_url=?'); vals.push(updates.avatar_url); }
+      const values: unknown[] = [];
+      if (updates.display_name !== undefined) {
+        fields.push('display_name=?');
+        values.push(updates.display_name);
+      }
+      if (updates.avatar_url !== undefined) {
+        fields.push('avatar_url=?');
+        values.push(updates.avatar_url);
+      }
       if (fields.length === 0) return err('Nothing to update');
-      fields.push('updated_at=?'); vals.push(new Date().toISOString());
-      vals.push(user.id);
-      await env.DB.prepare(`UPDATE users SET ${fields.join(',')} WHERE id=?`).bind(...vals).run();
+      fields.push('updated_at=?');
+      values.push(new Date().toISOString(), user.id);
+      await env.DB.prepare(`UPDATE users SET ${fields.join(',')} WHERE id=?`).bind(...values).run();
       const updated = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE id=?').bind(user.id).first<UserRow>();
       return json(updated);
     }
@@ -207,7 +442,7 @@ export default {
         WHERE t.user_id = ? OR t.access = 'shared'
         ORDER BY t.pinned DESC, t.created_at DESC
       `).bind(user.id).all<Record<string, unknown>>();
-      return json((rows.results || []).map(row => normalizePinned(row as { pinned?: number | boolean | null } & Record<string, unknown>)));
+      return json((rows.results || []).map((row) => normalizePinned(row as { pinned?: number | boolean | null } & Record<string, unknown>)));
     }
 
     if (path === '/api/tasks' && method === 'POST') {
@@ -227,7 +462,7 @@ export default {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       await env.DB.prepare(
-        'INSERT INTO tasks (id,user_id,title,description,status,priority,deadline,assignee,category,access,pinned,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        'INSERT INTO tasks (id,user_id,title,description,status,priority,deadline,assignee,category,access,pinned,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
       ).bind(
         id,
         user.id,
@@ -241,7 +476,7 @@ export default {
         task.access || 'shared',
         task.pinned ? 1 : 0,
         now,
-        now
+        now,
       ).run();
       return json({
         id,
@@ -267,18 +502,18 @@ export default {
       if (method === 'PATCH') {
         const updates = await req.json<Record<string, unknown>>();
         const fields: string[] = [];
-        const vals: unknown[] = [];
+        const values: unknown[] = [];
         const allowed = ['title', 'description', 'status', 'priority', 'deadline', 'assignee', 'category', 'access', 'pinned'];
         for (const key of allowed) {
           if (key in updates) {
             fields.push(`${key}=?`);
-            vals.push(key === 'pinned' ? (updates[key] ? 1 : 0) : updates[key]);
+            values.push(key === 'pinned' ? (updates[key] ? 1 : 0) : updates[key]);
           }
         }
         if (fields.length === 0) return err('Nothing to update');
-        fields.push('updated_at=?'); vals.push(new Date().toISOString());
-        vals.push(id);
-        await env.DB.prepare(`UPDATE tasks SET ${fields.join(',')} WHERE id=?`).bind(...vals).run();
+        fields.push('updated_at=?');
+        values.push(new Date().toISOString(), id);
+        await env.DB.prepare(`UPDATE tasks SET ${fields.join(',')} WHERE id=?`).bind(...values).run();
         const updated = await env.DB.prepare(`
           SELECT
             t.*,
@@ -334,7 +569,7 @@ export default {
         itemsByList.get(listId)!.push(normalizeBought(item as { bought?: number | boolean | null } & Record<string, unknown>));
       }
 
-      return json((lists.results || []).map(list => ({
+      return json((lists.results || []).map((list) => ({
         ...normalizePinned(list as { pinned?: number | boolean | null } & Record<string, unknown>),
         items: itemsByList.get((list as { id: string }).id) || [],
       })));
@@ -359,6 +594,7 @@ export default {
       const id = listMatch[1];
       const listRow = await getAccessibleList(env, id);
       if (!canAccessRow(user.id, listRow)) return err('List not found', 404);
+
       if (method === 'DELETE') {
         if (listRow?.user_id !== user.id) return err('Only creator can delete the whole list', 403);
         await env.DB.prepare('DELETE FROM shopping_lists WHERE id=?').bind(id).run();
@@ -376,7 +612,7 @@ export default {
       const item = await req.json<{ name: string; quantity?: string; note?: string; url?: string }>();
       const id = crypto.randomUUID();
       await env.DB.prepare(
-        'INSERT INTO shopping_items (id,list_id,name,quantity,bought,note,url,added_by_user_id) VALUES (?,?,?,?,0,?,?,?)'
+        'INSERT INTO shopping_items (id,list_id,name,quantity,bought,note,url,added_by_user_id) VALUES (?,?,?,?,0,?,?,?)',
       ).bind(id, listId, item.name, item.quantity || '1', item.note || null, item.url || null, user.id).run();
       return json({
         id,
@@ -396,13 +632,217 @@ export default {
       const [, listId, itemId] = itemMatch;
       const listRow = await getAccessibleList(env, listId);
       if (!canAccessRow(user.id, listRow)) return err('List not found', 404);
+
       if (method === 'PATCH') {
         const { bought } = await req.json<{ bought: boolean }>();
         await env.DB.prepare('UPDATE shopping_items SET bought=? WHERE id=? AND list_id=?').bind(bought ? 1 : 0, itemId, listId).run();
         return json({ updated: true });
       }
+
       if (method === 'DELETE') {
         await env.DB.prepare('DELETE FROM shopping_items WHERE id=? AND list_id=?').bind(itemId, listId).run();
+        return json({ deleted: true });
+      }
+    }
+
+    if (path === '/api/wardrobe' && method === 'GET') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const rows = await env.DB.prepare(
+        'SELECT id, user_id, name, category, seasons, colors, temp_min, temp_max, description, photo_key, created_at FROM wardrobe_items WHERE user_id=? ORDER BY created_at DESC',
+      ).bind(user.id).all<WardrobeItemRow>();
+      return json((rows.results || []).map((row) => wardrobeItemToResponse(req, row)));
+    }
+
+    if (path === '/api/wardrobe' && method === 'POST') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const payload = await req.json<{
+        name: string;
+        category: string;
+        seasons?: string[];
+        colors?: string | null;
+        temp_min?: number | null;
+        temp_max?: number | null;
+        description?: string | null;
+        photo_key?: string | null;
+      }>();
+      if (!payload.name?.trim()) return err('Name is required');
+      if (!payload.category?.trim()) return err('Category is required');
+      const id = crypto.randomUUID();
+      await env.DB.prepare(
+        'INSERT INTO wardrobe_items (id,user_id,name,category,seasons,colors,temp_min,temp_max,description,photo_key,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+      ).bind(
+        id,
+        user.id,
+        payload.name.trim(),
+        payload.category.trim(),
+        JSON.stringify(payload.seasons || []),
+        payload.colors || null,
+        payload.temp_min ?? null,
+        payload.temp_max ?? null,
+        payload.description || null,
+        payload.photo_key || null,
+        new Date().toISOString(),
+      ).run();
+      const created = await getWardrobeItem(env, id);
+      return json(created ? wardrobeItemToResponse(req, created) : null);
+    }
+
+    if (path === '/api/wardrobe/photo' && method === 'POST') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      if (!env.WARDROBE_BUCKET) return err('Wardrobe bucket is not configured', 500);
+      const formData = await req.formData();
+      const file = formData.get('file');
+      if (!(file instanceof File)) return err('File is required');
+      const contentType = file.type || 'image/jpeg';
+      const key = `wardrobe/${user.id}/${crypto.randomUUID()}.${extFromContentType(contentType)}`;
+      await env.WARDROBE_BUCKET.put(key, await file.arrayBuffer(), {
+        httpMetadata: { contentType },
+      });
+      return json({ photo_key: key });
+    }
+
+    const photoMatch = path.match(/^\/api\/wardrobe\/photo\/([^/]+)$/);
+    if (photoMatch && method === 'GET') {
+      const item = await getWardrobeItem(env, photoMatch[1]);
+      if (!item?.photo_key || !env.WARDROBE_BUCKET) return new Response('Not found', { status: 404, headers: CORS });
+      const object = await env.WARDROBE_BUCKET.get(item.photo_key);
+      if (!object) return new Response('Not found', { status: 404, headers: CORS });
+      const headers = new Headers(CORS);
+      headers.set('Content-Type', object.httpMetadata?.contentType || 'image/jpeg');
+      headers.set('Cache-Control', 'public, max-age=3600');
+      return new Response(object.body, { headers });
+    }
+
+    if (path === '/api/wardrobe/suggest' && method === 'GET') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const temp = Number(url.searchParams.get('temp') || '0');
+      const tempMin = Number(url.searchParams.get('tempMin') || temp);
+      const tempMax = Number(url.searchParams.get('tempMax') || temp);
+      const precip = Number(url.searchParams.get('precip') || '0');
+      const windSpeed = Number(url.searchParams.get('windSpeed') || '0');
+      const weatherDesc = url.searchParams.get('weatherDesc') || 'без уточнення';
+      const season = url.searchParams.get('season') || currentSeason();
+
+      const rows = await env.DB.prepare(
+        'SELECT id, user_id, name, category, seasons, colors, temp_min, temp_max, description, photo_key, created_at FROM wardrobe_items WHERE user_id=? ORDER BY created_at DESC',
+      ).bind(user.id).all<WardrobeItemRow>();
+
+      const fallback = buildFallbackSuggestion(rows.results || [], temp, tempMin, tempMax, weatherDesc, precip, windSpeed, season);
+      const availableItems = fallback.available.map((item) => wardrobeItemToResponse(req, item));
+
+      let suggestion = fallback.suggestion;
+      let source: 'ai' | 'fallback' = 'fallback';
+
+      if (env.ANTHROPIC_API_KEY && availableItems.length > 0) {
+        try {
+          const aiSuggestion = await callAnthropicSuggestion(
+            env.ANTHROPIC_API_KEY,
+            temp,
+            tempMin,
+            tempMax,
+            weatherDesc,
+            availableItems,
+          );
+          if (aiSuggestion?.outfit.length) {
+            suggestion = aiSuggestion;
+            source = 'ai';
+          }
+        } catch {
+          source = 'fallback';
+        }
+      }
+
+      const selectedItems = availableItems.filter((item) => suggestion.outfit.includes(item.id));
+      return json({
+        source,
+        outfit: suggestion.outfit,
+        items: selectedItems,
+        explanation: suggestion.explanation,
+        available_count: availableItems.length,
+      });
+    }
+
+    if (path === '/api/wardrobe/outfit/save' && method === 'POST') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const payload = await req.json<{ item_ids: string[]; weather_temp?: number | null }>();
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await env.DB.prepare(
+        'INSERT INTO wardrobe_outfits (id,user_id,item_ids,suggested_at,weather_temp,created_at) VALUES (?,?,?,?,?,?)',
+      ).bind(id, user.id, JSON.stringify(payload.item_ids || []), now, payload.weather_temp ?? null, now).run();
+      return json({ id, saved: true });
+    }
+
+    const wardrobeMatch = path.match(/^\/api\/wardrobe\/([^/]+)$/);
+    if (wardrobeMatch) {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const itemId = wardrobeMatch[1];
+      const current = await getWardrobeItem(env, itemId);
+      if (!current || current.user_id !== user.id) return err('Wardrobe item not found', 404);
+
+      if (method === 'PUT') {
+        const payload = await req.json<{
+          name?: string;
+          category?: string;
+          seasons?: string[];
+          colors?: string | null;
+          temp_min?: number | null;
+          temp_max?: number | null;
+          description?: string | null;
+          photo_key?: string | null;
+        }>();
+        const fields: string[] = [];
+        const values: unknown[] = [];
+        if (payload.name !== undefined) {
+          fields.push('name=?');
+          values.push(payload.name.trim());
+        }
+        if (payload.category !== undefined) {
+          fields.push('category=?');
+          values.push(payload.category.trim());
+        }
+        if (payload.seasons !== undefined) {
+          fields.push('seasons=?');
+          values.push(JSON.stringify(payload.seasons));
+        }
+        if (payload.colors !== undefined) {
+          fields.push('colors=?');
+          values.push(payload.colors);
+        }
+        if (payload.temp_min !== undefined) {
+          fields.push('temp_min=?');
+          values.push(payload.temp_min);
+        }
+        if (payload.temp_max !== undefined) {
+          fields.push('temp_max=?');
+          values.push(payload.temp_max);
+        }
+        if (payload.description !== undefined) {
+          fields.push('description=?');
+          values.push(payload.description);
+        }
+        if (payload.photo_key !== undefined) {
+          fields.push('photo_key=?');
+          values.push(payload.photo_key);
+        }
+        if (fields.length === 0) return err('Nothing to update');
+        values.push(itemId);
+        await env.DB.prepare(`UPDATE wardrobe_items SET ${fields.join(',')} WHERE id=?`).bind(...values).run();
+        const updated = await getWardrobeItem(env, itemId);
+        return json(updated ? wardrobeItemToResponse(req, updated) : null);
+      }
+
+      if (method === 'DELETE') {
+        await env.DB.prepare('DELETE FROM wardrobe_items WHERE id=?').bind(itemId).run();
+        if (current.photo_key && env.WARDROBE_BUCKET) {
+          await env.WARDROBE_BUCKET.delete(current.photo_key);
+        }
         return json({ deleted: true });
       }
     }

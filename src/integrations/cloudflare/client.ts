@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker API client — replaces Supabase entirely.
+ * Cloudflare Worker API client.
  * All requests go to /api/* which is proxied to the Worker.
  */
 
@@ -9,8 +9,8 @@ function getToken(): string | null {
   return localStorage.getItem('hhh_token');
 }
 
-function setToken(t: string) {
-  localStorage.setItem('hhh_token', t);
+function setToken(token: string) {
+  localStorage.setItem('hhh_token', token);
 }
 
 function clearToken() {
@@ -20,19 +20,26 @@ function clearToken() {
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<{ data: T | null; error: string | null }> {
   const token = getToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
   try {
-    const res = await fetch(`${BASE}${path}`, { ...options, headers: { ...headers, ...(options.headers as Record<string, string> || {}) } });
-    const json = await res.json();
-    if (!res.ok) return { data: null, error: json.error || 'Unknown error' };
-    return { data: json as T, error: null };
-  } catch (e) {
-    return { data: null, error: (e as Error).message };
+    const response = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers,
+    });
+    const contentType = response.headers.get('Content-Type') || '';
+    const payload = contentType.includes('application/json') ? await response.json() : null;
+    if (!response.ok) return { data: null, error: payload?.error || 'Unknown error' };
+    return { data: payload as T, error: null };
+  } catch (error) {
+    return { data: null, error: (error as Error).message };
   }
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
 export interface CFUser {
   id: string;
   email: string;
@@ -53,7 +60,10 @@ export const cfAuth = {
       method: 'POST',
       body: JSON.stringify({ email, password, display_name }),
     });
-    if (data) { setToken(data.token); localStorage.setItem('hhh_user', JSON.stringify(data.user)); }
+    if (data) {
+      setToken(data.token);
+      localStorage.setItem('hhh_user', JSON.stringify(data.user));
+    }
     return { user: data?.user || null, error };
   },
 
@@ -62,7 +72,10 @@ export const cfAuth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    if (data) { setToken(data.token); localStorage.setItem('hhh_user', JSON.stringify(data.user)); }
+    if (data) {
+      setToken(data.token);
+      localStorage.setItem('hhh_user', JSON.stringify(data.user));
+    }
     return { user: data?.user || null, error };
   },
 
@@ -72,9 +85,11 @@ export const cfAuth = {
 
   getStoredUser(): CFUser | null {
     try {
-      const s = localStorage.getItem('hhh_user');
-      return s ? JSON.parse(s) : null;
-    } catch { return null; }
+      const stored = localStorage.getItem('hhh_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
   },
 
   async refreshProfile(): Promise<CFUser | null> {
@@ -88,13 +103,15 @@ export const cfAuth = {
   },
 
   async updateProfile(updates: { display_name?: string; avatar_url?: string }) {
-    const { data, error } = await apiFetch<CFUser>('/profile', { method: 'PATCH', body: JSON.stringify(updates) });
+    const { data, error } = await apiFetch<CFUser>('/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
     if (data) localStorage.setItem('hhh_user', JSON.stringify(data));
     return { data, error };
   },
 };
 
-// ─── Tasks ────────────────────────────────────────────────────────────────────
 export interface CFTask {
   id: string;
   user_id: string;
@@ -114,9 +131,11 @@ export interface CFTask {
 }
 
 export const cfTasks = {
-  async list() { return apiFetch<CFTask[]>('/tasks'); },
-  async create(t: Omit<CFTask, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
-    return apiFetch<CFTask>('/tasks', { method: 'POST', body: JSON.stringify(t) });
+  async list() {
+    return apiFetch<CFTask[]>('/tasks');
+  },
+  async create(task: Omit<CFTask, 'id' | 'user_id' | 'created_at' | 'updated_at'>) {
+    return apiFetch<CFTask>('/tasks', { method: 'POST', body: JSON.stringify(task) });
   },
   async update(id: string, updates: Partial<CFTask>) {
     return apiFetch<CFTask>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
@@ -126,7 +145,6 @@ export const cfTasks = {
   },
 };
 
-// ─── Shopping ─────────────────────────────────────────────────────────────────
 export interface CFItem {
   id: string;
   list_id: string;
@@ -153,9 +171,11 @@ export interface CFList {
 }
 
 export const cfLists = {
-  async list() { return apiFetch<CFList[]>('/lists'); },
-  async create(l: Omit<CFList, 'id' | 'user_id' | 'created_at' | 'items'>) {
-    return apiFetch<CFList>('/lists', { method: 'POST', body: JSON.stringify(l) });
+  async list() {
+    return apiFetch<CFList[]>('/lists');
+  },
+  async create(list: Omit<CFList, 'id' | 'user_id' | 'created_at' | 'items'>) {
+    return apiFetch<CFList>('/lists', { method: 'POST', body: JSON.stringify(list) });
   },
   async remove(id: string) {
     return apiFetch<{ deleted: boolean }>(`/lists/${id}`, { method: 'DELETE' });
@@ -164,9 +184,81 @@ export const cfLists = {
     return apiFetch<CFItem>(`/lists/${listId}/items`, { method: 'POST', body: JSON.stringify(item) });
   },
   async toggleItem(listId: string, itemId: string, bought: boolean) {
-    return apiFetch<{ updated: boolean }>(`/lists/${listId}/items/${itemId}`, { method: 'PATCH', body: JSON.stringify({ bought }) });
+    return apiFetch<{ updated: boolean }>(`/lists/${listId}/items/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ bought }),
+    });
   },
   async deleteItem(listId: string, itemId: string) {
     return apiFetch<{ deleted: boolean }>(`/lists/${listId}/items/${itemId}`, { method: 'DELETE' });
+  },
+};
+
+export interface CFWardrobeItem {
+  id: string;
+  user_id: string;
+  name: string;
+  category: string;
+  seasons: string[];
+  colors?: string | null;
+  temp_min?: number | null;
+  temp_max?: number | null;
+  description?: string | null;
+  photo_key?: string | null;
+  photo_url?: string | null;
+  created_at: string;
+}
+
+export interface CFWardrobeSuggestion {
+  source: 'ai' | 'fallback';
+  outfit: string[];
+  items: CFWardrobeItem[];
+  explanation: string;
+  available_count: number;
+}
+
+export const cfWardrobe = {
+  async list() {
+    return apiFetch<CFWardrobeItem[]>('/wardrobe');
+  },
+  async create(item: Omit<CFWardrobeItem, 'id' | 'user_id' | 'created_at' | 'photo_url'>) {
+    return apiFetch<CFWardrobeItem>('/wardrobe', { method: 'POST', body: JSON.stringify(item) });
+  },
+  async update(id: string, updates: Partial<Omit<CFWardrobeItem, 'id' | 'user_id' | 'created_at' | 'photo_url'>>) {
+    return apiFetch<CFWardrobeItem>(`/wardrobe/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+  },
+  async remove(id: string) {
+    return apiFetch<{ deleted: boolean }>(`/wardrobe/${id}`, { method: 'DELETE' });
+  },
+  async uploadPhoto(file: File | Blob) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiFetch<{ photo_key: string }>('/wardrobe/photo', { method: 'POST', body: formData });
+  },
+  async suggest(params: {
+    temp: number;
+    tempMin: number;
+    tempMax: number;
+    precip: number;
+    windSpeed: number;
+    weatherDesc: string;
+    season: string;
+  }) {
+    const query = new URLSearchParams({
+      temp: String(params.temp),
+      tempMin: String(params.tempMin),
+      tempMax: String(params.tempMax),
+      precip: String(params.precip),
+      windSpeed: String(params.windSpeed),
+      weatherDesc: params.weatherDesc,
+      season: params.season,
+    });
+    return apiFetch<CFWardrobeSuggestion>(`/wardrobe/suggest?${query.toString()}`);
+  },
+  async saveOutfit(itemIds: string[], weatherTemp: number) {
+    return apiFetch<{ id: string; saved: boolean }>('/wardrobe/outfit/save', {
+      method: 'POST',
+      body: JSON.stringify({ item_ids: itemIds, weather_temp: weatherTemp }),
+    });
   },
 };

@@ -9,3 +9,7 @@ database_id = "77b045c3-fe39-42d2-b279-9d02659c359a"
 
 [vars]
 JWT_SECRET = "change-me-in-dashboard"
+
+[[r2_buckets]]
+binding = "WARDROBE_BUCKET"
+bucket_name = "home-harmony-hub-wardrobe"
