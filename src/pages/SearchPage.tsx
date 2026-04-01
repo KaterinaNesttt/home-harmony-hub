@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
+import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
 import type { Task, ShoppingList } from '@/types';
 
 interface SearchPageProps {
   tasks: Task[];
   lists: ShoppingList[];
+  currentUserId: string;
+  householdUsers: CFHouseholdUser[];
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
 }
 
-export function SearchPage({ tasks, lists, onUpdateTask }: SearchPageProps) {
+export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpdateTask }: SearchPageProps) {
   const [query, setQuery] = useState('');
   const q = query.toLowerCase().trim();
 
@@ -102,6 +105,8 @@ export function SearchPage({ tasks, lists, onUpdateTask }: SearchPageProps) {
               <TaskCard
                 key={task.id}
                 task={task}
+                currentUserId={currentUserId}
+                householdUsers={householdUsers}
                 onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })}
               />
             ))}

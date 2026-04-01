@@ -12,9 +12,12 @@ function cfTaskToTask(t: CFTask): Task {
     priority: t.priority,
     deadline: t.deadline,
     assignee: t.assignee,
+    assigneeName: t.assignee_name,
     category: t.category as Task['category'],
     access: t.access,
     pinned: t.pinned,
+    createdById: t.user_id,
+    createdByName: t.user_display_name,
     createdAt: t.created_at,
     updatedAt: t.updated_at,
   };
@@ -28,6 +31,8 @@ function cfListToList(l: CFList): ShoppingList {
     category: l.category as ShoppingList['category'],
     access: l.access,
     pinned: l.pinned,
+    createdById: l.user_id,
+    createdByName: l.user_display_name,
     createdAt: l.created_at,
     items: l.items.map(i => ({
       id: i.id,
@@ -36,6 +41,8 @@ function cfListToList(l: CFList): ShoppingList {
       bought: i.bought,
       note: i.note,
       url: i.url,
+      addedById: i.added_by_user_id,
+      addedByName: i.added_by_name,
     })),
   };
 }

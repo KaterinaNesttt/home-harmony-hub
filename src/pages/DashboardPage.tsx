@@ -2,12 +2,15 @@ import { Plus, CheckSquare, ShoppingCart, CloudSun, TrendingUp } from 'lucide-re
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
 import type { Task, ShoppingList, ShoppingItem } from '@/types';
 
 interface DashboardPageProps {
   tasks: Task[];
   lists: ShoppingList[];
   profile: { display_name: string; avatar_url: string | null } | null;
+  currentUserId: string;
+  householdUsers: CFHouseholdUser[];
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
@@ -19,7 +22,7 @@ interface DashboardPageProps {
   onGoToWeather: () => void;
 }
 
-export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
+export function DashboardPage({ tasks, lists, profile, currentUserId, householdUsers, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -135,6 +138,8 @@ export function DashboardPage({ tasks, lists, profile, onUpdateTask, onToggleIte
           <div className="space-y-2.5 stagger">
             {displayTasks.map(task => (
               <TaskCard key={task.id} task={task}
+                currentUserId={currentUserId}
+                householdUsers={householdUsers}
                 onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })} />
             ))}
           </div>

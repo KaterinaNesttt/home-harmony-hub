@@ -23,7 +23,7 @@ const Index = () => {
   const [showAddList, setShowAddList] = useState(false);
   const [showAddToList, setShowAddToList] = useState(false);
 
-  const { user, profile, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
+  const { user, profile, householdUsers, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
   const { lists, addList, addItem, toggleItem, deleteItem } = useShoppingStore(!!user);
 
@@ -100,7 +100,7 @@ const Index = () => {
         <main className="max-w-lg mx-auto px-4 pt-6 pb-28">
           {tab === 'dashboard' && (
             <DashboardPage
-              tasks={tasks} lists={lists} profile={profile}
+              tasks={tasks} lists={lists} profile={profile} currentUserId={user.id} householdUsers={householdUsers}
               onUpdateTask={updateTask}
               onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
               onAddTask={() => setShowAddTask(true)}
@@ -111,7 +111,7 @@ const Index = () => {
             />
           )}
           {tab === 'tasks' && (
-            <TasksPage tasks={tasks} onUpdateTask={updateTask} onDeleteTask={deleteTask}
+            <TasksPage tasks={tasks} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask} onDeleteTask={deleteTask}
               onAddTask={() => setShowAddTask(true)} />
           )}
           {tab === 'shopping' && (
@@ -120,7 +120,7 @@ const Index = () => {
               onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem} />
           )}
           {tab === 'search' && (
-            <SearchPage tasks={tasks} lists={lists} onUpdateTask={updateTask} />
+            <SearchPage tasks={tasks} lists={lists} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask} />
           )}
           {tab === 'weather' && <WeatherPage />}
           {tab === 'account' && (
@@ -139,7 +139,13 @@ const Index = () => {
 
         <BottomNav active={tab} onChange={changeTab} />
 
-        <AddTaskDialog open={showAddTask} onClose={() => setShowAddTask(false)} onAdd={addTask} />
+        <AddTaskDialog
+          open={showAddTask}
+          onClose={() => setShowAddTask(false)}
+          onAdd={addTask}
+          currentUserId={user.id}
+          householdUsers={householdUsers}
+        />
         <AddListDialog open={showAddList} onClose={() => setShowAddList(false)} onAdd={addList} />
         <AddToListDialog
           open={showAddToList}

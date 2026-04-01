@@ -1,6 +1,6 @@
 export type TaskStatus = 'unseen' | 'seen' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
-export type Assignee = 'me' | 'partner' | 'both';
+export type Assignee = string | 'both';
 export type AccessType = 'shared' | 'private';
 export type ShoppingListType = 'daily' | 'global' | 'wishlist';
 
@@ -15,10 +15,13 @@ export interface Task {
   priority: TaskPriority;
   deadline?: string;
   assignee: Assignee;
+  assigneeName?: string;
   category: Category;
   access: AccessType;
   pinned: boolean;
   recurring?: 'daily' | 'weekly' | 'monthly';
+  createdById?: string;
+  createdByName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +33,8 @@ export interface ShoppingItem {
   bought: boolean;
   url?: string;
   note?: string;
+  addedById?: string;
+  addedByName?: string;
 }
 
 export interface ShoppingList {
@@ -40,5 +45,7 @@ export interface ShoppingList {
   category: Category;
   access: AccessType;
   pinned: boolean;
+  createdById?: string;
+  createdByName?: string;
   createdAt: string;
 }

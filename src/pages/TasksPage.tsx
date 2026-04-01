@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Plus, Filter, SlidersHorizontal } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
+import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
 import type { Task } from '@/types';
 
 type TaskView = 'all' | 'upcoming' | 'done';
 
 interface TasksPageProps {
   tasks: Task[];
+  currentUserId: string;
+  householdUsers: CFHouseholdUser[];
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
   onAddTask: () => void;
 }
 
-export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: TasksPageProps) {
+export function TasksPage({ tasks, currentUserId, householdUsers, onUpdateTask, onDeleteTask, onAddTask }: TasksPageProps) {
   const [view, setView] = useState<TaskView>('all');
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -91,6 +94,8 @@ export function TasksPage({ tasks, onUpdateTask, onDeleteTask, onAddTask }: Task
             <TaskCard
               key={task.id}
               task={task}
+              currentUserId={currentUserId}
+              householdUsers={householdUsers}
               onToggleDone={() => onUpdateTask(task.id, { status: task.status==='done' ? 'unseen' : 'done' })}
             />
           ))

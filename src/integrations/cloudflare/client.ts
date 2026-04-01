@@ -40,6 +40,13 @@ export interface CFUser {
   avatar_url: string | null;
 }
 
+export interface CFHouseholdUser {
+  id: string;
+  email: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
 export const cfAuth = {
   async signUp(email: string, password: string, display_name: string) {
     const { data, error } = await apiFetch<{ token: string; user: CFUser }>('/auth/signup', {
@@ -76,6 +83,10 @@ export const cfAuth = {
     return data;
   },
 
+  async listUsers() {
+    return apiFetch<CFHouseholdUser[]>('/users');
+  },
+
   async updateProfile(updates: { display_name?: string; avatar_url?: string }) {
     const { data, error } = await apiFetch<CFUser>('/profile', { method: 'PATCH', body: JSON.stringify(updates) });
     if (data) localStorage.setItem('hhh_user', JSON.stringify(data));
@@ -87,12 +98,14 @@ export const cfAuth = {
 export interface CFTask {
   id: string;
   user_id: string;
+  user_display_name?: string;
   title: string;
   description?: string;
   status: 'unseen' | 'seen' | 'in_progress' | 'done';
   priority: 'low' | 'medium' | 'high';
   deadline?: string;
-  assignee: 'me' | 'partner' | 'both';
+  assignee: string | 'both';
+  assignee_name?: string;
   category: string;
   access: 'shared' | 'private';
   pinned: boolean;
@@ -122,11 +135,14 @@ export interface CFItem {
   bought: boolean;
   note?: string;
   url?: string;
+  added_by_user_id?: string;
+  added_by_name?: string;
 }
 
 export interface CFList {
   id: string;
   user_id: string;
+  user_display_name?: string;
   title: string;
   type: 'daily' | 'global' | 'wishlist';
   category: string;

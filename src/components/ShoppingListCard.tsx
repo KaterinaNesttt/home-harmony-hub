@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Trash2, ExternalLink, Plus, Pin, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ShoppingList, ShoppingItem } from '@/types';
+import type { ShoppingItem, ShoppingList } from '@/types';
 import { useFrequentItems } from '@/hooks/useFrequentItems';
 
 const typeEmoji: Record<string, string> = { daily: '📅', global: '📦', wishlist: '💫' };
@@ -27,7 +27,9 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
     if (!newItem.trim()) return;
     onAddItem({ name: newItem.trim(), quantity: newQty.trim() || '1', bought: false });
     recordItem(newItem.trim());
-    setNewItem(''); setNewQty(''); setShowSuggestions(false);
+    setNewItem('');
+    setNewQty('');
+    setShowSuggestions(false);
   };
 
   const handleInputChange = (val: string) => {
@@ -36,20 +38,24 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
     setShowSuggestions(true);
   };
 
-  const pickSuggestion = (s: string) => {
-    setNewItem(s);
+  const pickSuggestion = (suggestion: string) => {
+    setNewItem(suggestion);
     setShowSuggestions(false);
   };
 
   return (
     <div className="glass rounded-2xl overflow-hidden animate-fade-in card-hover">
-      {/* Header */}
       <button className="w-full p-4 text-left tap-scale" onClick={() => setCollapsed(c => !c)}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="text-lg">{typeEmoji[list.type] || '📋'}</span>
-            {list.pinned && <Pin className="w-3.5 h-3.5 text-gold flex-shrink-0" />}
-            <h3 className="font-bold text-base text-foreground">{list.title}</h3>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg">{typeEmoji[list.type] || '📋'}</span>
+              {list.pinned && <Pin className="w-3.5 h-3.5 text-gold flex-shrink-0" />}
+              <h3 className="font-bold text-base text-foreground truncate">{list.title}</h3>
+            </div>
+            {list.createdByName && (
+              <p className="text-xs text-muted-foreground mt-1">{`Додала: ${list.createdByName}`}</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
@@ -82,6 +88,7 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
                     <span className={cn('text-sm font-medium', item.bought && 'line-through text-muted-foreground')}>{item.name}</span>
                     <span className="text-xs text-muted-foreground ml-2">× {item.quantity}</span>
                     {item.note && <p className="text-xs text-muted-foreground mt-0.5">{item.note}</p>}
+                    {item.addedByName && <p className="text-[11px] text-muted-foreground/80 mt-0.5">{`Додала: ${item.addedByName}`}</p>}
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     {item.url && (
@@ -98,23 +105,21 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
             </div>
           )}
 
-          {/* Add item row with suggestions */}
           <div className="border-t border-border/40 bg-muted/20 relative">
-            {/* Suggestions */}
             {showSuggestions && suggestions.length > 0 && (
               <div className="absolute bottom-full left-0 right-0 glass-strong border border-border/50 rounded-t-xl overflow-hidden z-10 shadow-glass">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/30">
                   <Sparkles className="w-3 h-3 text-primary" />
-                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Підказки</span>
+                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">РџС–РґРєР°Р·РєРё</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 p-2">
-                  {suggestions.map((s, i) => (
+                  {suggestions.map((suggestion, i) => (
                     <button
                       key={i}
-                      onMouseDown={() => pickSuggestion(s)}
+                      onMouseDown={() => pickSuggestion(suggestion)}
                       className="text-xs font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 tap-scale transition-colors"
                     >
-                      {s}
+                      {suggestion}
                     </button>
                   ))}
                 </div>
@@ -123,7 +128,7 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
 
             <div className="flex items-center gap-2 p-3">
               <input
-                placeholder="Додати товар..."
+                placeholder="Р”РѕРґР°С‚Рё С‚РѕРІР°СЂ..."
                 value={newItem}
                 onChange={e => handleInputChange(e.target.value)}
                 onFocus={() => { setSuggestions(getSuggestions(newItem)); setShowSuggestions(true); }}
@@ -132,7 +137,7 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem }
                 className="flex-1 h-10 px-3 bg-transparent border border-border/40 rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all"
               />
               <input
-                placeholder="Кіл."
+                placeholder="РљС–Р»."
                 value={newQty}
                 onChange={e => setNewQty(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAdd()}

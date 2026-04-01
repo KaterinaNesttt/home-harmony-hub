@@ -1,43 +1,62 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Task, TaskPriority, Assignee, Category, AccessType } from '@/types';
+import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
+import type { AccessType, Assignee, Category, Task, TaskPriority } from '@/types';
 import { CATEGORIES } from '@/types';
 
 interface AddTaskDialogProps {
   open: boolean;
   onClose: () => void;
   onAdd: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  currentUserId: string;
+  householdUsers: CFHouseholdUser[];
 }
 
-export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
+export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUsers }: AddTaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
-  const [assignee, setAssignee] = useState<Assignee>('me');
-  const [category, setCategory] = useState<Category>('Дім');
+  const [assignee, setAssignee] = useState<Assignee>(currentUserId);
+  const [category, setCategory] = useState<Category>('Р”С–Рј');
   const [access, setAccess] = useState<AccessType>('shared');
   const [deadline, setDeadline] = useState('');
+
+  useEffect(() => {
+    setAssignee(currentUserId);
+  }, [currentUserId, open]);
 
   if (!open) return null;
 
   const handleSubmit = () => {
     if (!title.trim()) return;
-    onAdd({ title: title.trim(), description: description.trim() || undefined, status: 'unseen', priority, assignee, category, access, pinned: false, deadline: deadline || undefined });
-    setTitle(''); setDescription(''); setDeadline('');
+    onAdd({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status: 'unseen',
+      priority,
+      assignee,
+      category,
+      access,
+      pinned: false,
+      deadline: deadline || undefined,
+    });
+    setTitle('');
+    setDescription('');
+    setDeadline('');
+    setAssignee(currentUserId);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm" onClick={onClose}>
       <div className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 btn-gold rounded-2xl flex items-center justify-center shadow-gold">
               <Sparkles className="w-5 h-5" />
             </div>
-            <h2 className="text-xl font-bold font-display">Нова задача</h2>
+            <h2 className="text-xl font-bold font-display">РќРѕРІР° Р·Р°РґР°С‡Р°</h2>
           </div>
           <button onClick={onClose} className="w-9 h-9 glass rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground tap-scale">
             <X className="w-5 h-5" />
@@ -46,7 +65,7 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
 
         <div className="space-y-4">
           <input
-            placeholder="Назва задачі"
+            placeholder="РќР°Р·РІР° Р·Р°РґР°С‡С–"
             value={title}
             onChange={e => setTitle(e.target.value)}
             autoFocus
@@ -54,7 +73,7 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
           />
 
           <textarea
-            placeholder="Опис (опціонально)"
+            placeholder="РћРїРёСЃ (РѕРїС†С–РѕРЅР°Р»СЊРЅРѕ)"
             value={description}
             onChange={e => setDescription(e.target.value)}
             rows={2}
@@ -62,7 +81,7 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
           />
 
           <div>
-            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Дедлайн</label>
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Р”РµРґР»Р°Р№РЅ</label>
             <input
               type="datetime-local"
               value={deadline}
@@ -73,35 +92,38 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Пріоритет</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РџСЂС–РѕСЂРёС‚РµС‚</label>
               <Select value={priority} onValueChange={v => setPriority(v as TaskPriority)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">🟢 Низький</SelectItem>
-                  <SelectItem value="medium">🟡 Середній</SelectItem>
-                  <SelectItem value="high">🔴 Високий</SelectItem>
+                  <SelectItem value="low">🟢 РќРёР·СЊРєРёР№</SelectItem>
+                  <SelectItem value="medium">🟡 РЎРµСЂРµРґРЅС–Р№</SelectItem>
+                  <SelectItem value="high">🔴 Р’РёСЃРѕРєРёР№</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Хто</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РҐС‚Рѕ</label>
               <Select value={assignee} onValueChange={v => setAssignee(v as Assignee)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="me">👤 Я</SelectItem>
-                  <SelectItem value="partner">👫 Партнер</SelectItem>
-                  <SelectItem value="both">🤝 Обидва</SelectItem>
+                  {householdUsers.map(person => (
+                    <SelectItem key={person.id} value={person.id}>
+                      {person.id === currentUserId ? '👤 Я' : '👥'} {person.display_name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="both">🤝 РћР±РѕС”</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Категорія</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">РљР°С‚РµРіРѕСЂС–СЏ</label>
               <Select value={category} onValueChange={v => setCategory(v as Category)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
@@ -113,14 +135,14 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
             </div>
 
             <div>
-              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Доступ</label>
+              <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">Р”РѕСЃС‚СѓРї</label>
               <Select value={access} onValueChange={v => setAccess(v as AccessType)}>
                 <SelectTrigger className="h-12 rounded-xl glass border-border/50">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="shared">🤝 Спільна</SelectItem>
-                  <SelectItem value="private">🔒 Приватна</SelectItem>
+                  <SelectItem value="shared">🤝 РЎРїС–Р»СЊРЅР°</SelectItem>
+                  <SelectItem value="private">🔒 РџСЂРёРІР°С‚РЅР°</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -131,7 +153,7 @@ export function AddTaskDialog({ open, onClose, onAdd }: AddTaskDialogProps) {
             disabled={!title.trim()}
             className="btn-gold w-full h-14 rounded-2xl font-bold text-base tap-scale disabled:opacity-50 mt-1"
           >
-            ✨ Створити задачу
+            ✨ РЎС‚РІРѕСЂРёС‚Рё Р·Р°РґР°С‡Сѓ
           </button>
         </div>
       </div>
