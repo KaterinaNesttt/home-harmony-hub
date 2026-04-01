@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Plus, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ShoppingList, ShoppingItem, ShoppingListType, Category } from '@/types';
@@ -32,8 +32,18 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
   // Suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const { recordItem, getSuggestions } = useFrequentItems();
+
+  const scrollFocusedFieldIntoView = useCallback(() => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || !modalRef.current?.contains(active)) return;
+    window.setTimeout(() => {
+      active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 220);
+  }, []);
 
   // Reset on open
   useEffect(() => {
@@ -45,12 +55,23 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
       setShowSuggestions(false);
       setSuggestions(getSuggestions(''));
     }
+  }, [open, lists, getSuggestions]);
+
+  useEffect(() => {
+    if (!open || !window.visualViewport) return;
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - window.visualViewport!.height);
+      setKeyboardOffset(offset);
+    };
+    updateKeyboardOffset();
+    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
+    return () => window.visualViewport?.removeEventListener('resize', updateKeyboardOffset);
   }, [open]);
 
   // Update suggestions as user types
   useEffect(() => {
     setSuggestions(getSuggestions(name));
-  }, [name]);
+  }, [name, getSuggestions]);
 
   if (!open) return null;
 
@@ -98,14 +119,18 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
       onClick={onClose}
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))' }}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+      }}
     >
       <div
-        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[92dvh] overflow-y-auto"
+        ref={modalRef}
+        className="glass-strong w-full max-w-md rounded-3xl p-6 animate-slide-up max-h-[92dvh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
-        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(keyboard-inset-height, 0px) - 16px)' }}
+        style={{ maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - ${keyboardOffset}px - 16px)` }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
@@ -159,6 +184,7 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
                 placeholder="Назва нового списку"
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
+                onFocus={scrollFocusedFieldIntoView}
                 className="w-full h-12 px-4 glass rounded-xl text-sm font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
               />
               <div className="grid grid-cols-2 gap-2">
@@ -199,10 +225,9 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
                 placeholder="Назва товару"
                 value={name}
                 onChange={e => { setName(e.target.value); setShowSuggestions(true); }}
-                onFocus={() => { setShowSuggestions(true); setSuggestions(getSuggestions(name)); }}
+                onFocus={() => { setShowSuggestions(true); setSuggestions(getSuggestions(name)); scrollFocusedFieldIntoView(); }}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                autoFocus={mode === 'existing'}
                 className="w-full h-12 px-4 glass rounded-xl text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
               />
 
@@ -233,6 +258,7 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
               placeholder="Кіл."
               value={quantity}
               onChange={e => setQuantity(e.target.value)}
+              onFocus={scrollFocusedFieldIntoView}
               className="w-20 h-12 px-3 glass rounded-xl text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50 flex-shrink-0"
             />
           </div>
@@ -244,12 +270,14 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
                 placeholder="🔗 Посилання (URL)"
                 value={url}
                 onChange={e => setUrl(e.target.value)}
+                onFocus={scrollFocusedFieldIntoView}
                 className="w-full h-12 px-4 glass rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
               />
               <input
                 placeholder="📝 Нотатка"
                 value={note}
                 onChange={e => setNote(e.target.value)}
+                onFocus={scrollFocusedFieldIntoView}
                 className="w-full h-12 px-4 glass rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
               />
             </div>

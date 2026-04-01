@@ -40,12 +40,18 @@ function getAssigneeLabel(task: Task, currentUserId?: string, householdUsers: CF
   return householdUsers.find(person => person.id === task.assignee)?.display_name || 'Виконавець';
 }
 
+function getAssigneeAvatar(task: Task, householdUsers: CFHouseholdUser[] = []) {
+  if (task.assignee === 'both') return null;
+  return householdUsers.find(person => person.id === task.assignee)?.avatar_url || null;
+}
+
 export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDone, onClick }: TaskCardProps) {
   const isDone = task.status === 'done';
   const deadline = task.deadline ? new Date(task.deadline) : null;
   const isOverdue = deadline && deadline < new Date() && !isDone;
   const pc = priorityConfig[task.priority];
   const assigneeLabel = getAssigneeLabel(task, currentUserId, householdUsers);
+  const assigneeAvatar = getAssigneeAvatar(task, householdUsers);
 
   const { offset, released, elRef, handlers } = useSwipe({
     onSwipeRight: onToggleDone,
@@ -138,7 +144,9 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
               )}
 
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                {task.assignee === 'both' ? <Users className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                {task.assignee === 'both' ? <Users className="w-3 h-3" /> : assigneeAvatar ? (
+                  <img src={assigneeAvatar} alt={assigneeLabel} className="w-3.5 h-3.5 rounded-full object-cover" />
+                ) : <User className="w-3 h-3" />}
                 {assigneeLabel}
               </span>
 

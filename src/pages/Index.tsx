@@ -13,6 +13,7 @@ import { WeatherPage } from '@/pages/WeatherPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { useTaskStore, useShoppingStore, useWardrobeStore } from '@/store/useStore';
 import { useAuth } from '@/hooks/useAuth';
+import { usePwaNotifications } from '@/hooks/usePwaNotifications';
 import type { ShoppingList } from '@/types';
 
 export type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search' | 'weather' | 'account';
@@ -24,6 +25,7 @@ const Index = () => {
   const [showAddToList, setShowAddToList] = useState(false);
 
   const { user, profile, householdUsers, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
+  usePwaNotifications(!!user);
   const { tasks, addTask, updateTask } = useTaskStore(!!user);
   const { lists, addList, addItem, toggleItem, deleteItem, archiveList, unarchiveList } = useShoppingStore(!!user);
   const {
