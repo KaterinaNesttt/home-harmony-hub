@@ -11,6 +11,10 @@ import {
   Sun,
   Sunrise,
   Sunset,
+  Thermometer,
+  MapPin,
+  X,
+  Search,
   Umbrella,
   Wind,
 } from 'lucide-react';
@@ -49,6 +53,15 @@ interface WeatherData {
   tempMax: number;
   hourly: AdviceHourlyEntry[];
 }
+
+interface CityResult {
+  name: string;
+  country: string;
+  admin1?: string;
+  lat: number;
+  lon: number;
+}
+
 
 const DEFAULT_CITY = {
   name: 'Кропивницький',
@@ -358,6 +371,13 @@ export function WeatherPage({ wardrobeCount, lastSuggestion, onSuggestOutfit, on
         </div>
       </div>
 
+      <div className={`rounded-2xl p-4 flex items-center gap-3 animate-slide-up ${advice.umbrella ? 'bg-accent/15 border border-accent/30' : 'bg-green-500/10 border border-green-500/20'}`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${advice.umbrella ? 'bg-accent/20' : 'bg-green-500/20'}`}>
+          <Umbrella className={`w-5 h-5 ${advice.umbrella ? 'text-accent' : 'text-green-500'}`} />
+        </div>
+        <p className="text-sm font-medium">{advice.umbrellaText}</p>
+      </div>
+
       <div className="glass rounded-2xl p-4 animate-slide-up">
         <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Що вдягнути</h2>
         <div className="space-y-2">
@@ -396,24 +416,9 @@ export function WeatherPage({ wardrobeCount, lastSuggestion, onSuggestOutfit, on
         <p className="text-sm text-muted-foreground">{advice.morningHint}</p>
       </div>
 
-      <div className={`rounded-2xl p-4 flex items-center gap-3 animate-slide-up ${advice.umbrella ? 'bg-accent/15 border border-accent/30' : 'bg-green-500/10 border border-green-500/20'}`}>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${advice.umbrella ? 'bg-accent/20' : 'bg-green-500/20'}`}>
-          <Umbrella className={`w-5 h-5 ${advice.umbrella ? 'text-accent' : 'text-green-500'}`} />
-        </div>
-        <p className="text-sm font-medium">{advice.umbrellaText}</p>
-      </div>
 
-      <div className="glass rounded-2xl p-4 animate-slide-up">
-        <h2 className="text-sm font-bold tracking-widest text-muted-foreground uppercase mb-3">Краще оминути</h2>
-        <div className="space-y-2">
-          {advice.avoid.map((item, index) => (
-            <div key={index} className="flex items-start gap-3 text-sm">
-              <span>⛔</span>
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+
+
 
       <div className="glass-strong rounded-2xl p-4 animate-slide-up">
         <div className="flex items-center justify-between gap-3 mb-3">
