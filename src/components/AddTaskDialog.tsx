@@ -21,6 +21,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
   const [category, setCategory] = useState<Category>('Дім');
   const [access, setAccess] = useState<AccessType>('shared');
   const [deadline, setDeadline] = useState('');
+  const [assigneeQuery, setAssigneeQuery] = useState('');
 
   useEffect(() => {
     setAssignee(currentUserId);
@@ -45,8 +46,15 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
     setDescription('');
     setDeadline('');
     setAssignee(currentUserId);
+    setAssigneeQuery('');
     onClose();
   };
+
+  const filteredUsers = householdUsers.filter((person) => {
+    const query = assigneeQuery.trim().toLowerCase();
+    if (!query) return true;
+    return person.display_name.toLowerCase().includes(query) || person.email.toLowerCase().includes(query);
+  });
 
   return (
     <div
@@ -120,9 +128,24 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {householdUsers.map(person => (
+                  <div className="px-2 pb-2">
+                    <input
+                      value={assigneeQuery}
+                      onChange={e => setAssigneeQuery(e.target.value)}
+                      placeholder="Пошук по імені або email"
+                      className="h-9 w-full rounded-md border border-border/60 bg-transparent px-2 text-sm"
+                    />
+                  </div>
+                  {filteredUsers.map(person => (
                     <SelectItem key={person.id} value={person.id}>
-                      {person.id === currentUserId ? '👤 Я' : '👥'} {person.display_name}
+                      <span className="inline-flex items-center gap-2">
+                        <img
+                          src={person.avatar_url || '/placeholder.svg'}
+                          alt={person.display_name}
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                        <span>{person.id === currentUserId ? '👤 Я' : person.display_name}</span>
+                      </span>
                     </SelectItem>
                   ))}
                   <SelectItem value="both">🤝 Обоє</SelectItem>

@@ -27,12 +27,15 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
       onClick={onClose}
-      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))' }}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))',
+      }}
     >
       <div
-        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
+        className="glass-strong w-full max-w-md rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(keyboard-inset-height, 0px) - 16px)' }}
       >
@@ -54,7 +57,6 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
             placeholder="Назва списку"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            autoFocus
             className="w-full h-14 px-4 glass rounded-2xl text-base font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
           />
 

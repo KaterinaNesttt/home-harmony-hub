@@ -17,6 +17,22 @@ type UserRow = {
   avatar_url: string | null;
 };
 
+type NotificationRow = {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  actor_name: string;
+  actor_avatar_url: string | null;
+  event_type: 'shared_list_created' | 'task_assigned';
+  title: string;
+  body: string;
+  entity_id: string;
+  entity_type: 'list' | 'task';
+  link: string;
+  read_at: string | null;
+  created_at: string;
+};
+
 type AccessControlledRow = {
   id: string;
   user_id: string;
@@ -274,6 +290,36 @@ async function listHouseholdUsers(env: Env): Promise<UserRow[]> {
   return rows.results || [];
 }
 
+async function createNotifications(
+  env: Env,
+  recipients: UserRow[],
+  payload: Omit<NotificationRow, 'id' | 'user_id' | 'read_at' | 'created_at'>,
+) {
+  const now = new Date().toISOString();
+  for (const recipient of recipients) {
+    const id = crypto.randomUUID();
+    await env.DB.prepare(
+      `INSERT INTO notifications
+      (id,user_id,actor_id,actor_name,actor_avatar_url,event_type,title,body,entity_id,entity_type,link,read_at,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ).bind(
+      id,
+      recipient.id,
+      payload.actor_id,
+      payload.actor_name,
+      payload.actor_avatar_url,
+      payload.event_type,
+      payload.title,
+      payload.body,
+      payload.entity_id,
+      payload.entity_type,
+      payload.link,
+      null,
+      now,
+    ).run();
+  }
+}
+
 async function getAccessibleTask(env: Env, taskId: string): Promise<AccessControlledRow | null> {
   return env.DB.prepare('SELECT id, user_id, access FROM tasks WHERE id=?').bind(taskId).first<AccessControlledRow>();
 }
@@ -423,6 +469,31 @@ export default {
       return json(await listHouseholdUsers(env));
     }
 
+    if (path === '/api/notifications' && method === 'GET') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      const since = url.searchParams.get('since');
+      const rows = since
+        ? await env.DB.prepare(
+          `SELECT id,user_id,actor_id,actor_name,actor_avatar_url,event_type,title,body,entity_id,entity_type,link,read_at,created_at
+           FROM notifications WHERE user_id=? AND created_at > ? ORDER BY created_at DESC LIMIT 30`,
+        ).bind(user.id, since).all<NotificationRow>()
+        : await env.DB.prepare(
+          `SELECT id,user_id,actor_id,actor_name,actor_avatar_url,event_type,title,body,entity_id,entity_type,link,read_at,created_at
+           FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 30`,
+        ).bind(user.id).all<NotificationRow>();
+      return json(rows.results || []);
+    }
+
+    if (path === '/api/notifications/read-all' && method === 'POST') {
+      const user = await getUser(req, env);
+      if (!user) return err('Unauthorized', 401);
+      await env.DB.prepare('UPDATE notifications SET read_at=? WHERE user_id=? AND read_at IS NULL')
+        .bind(new Date().toISOString(), user.id)
+        .run();
+      return json({ updated: true });
+    }
+
     if (path === '/api/tasks' && method === 'GET') {
       const user = await getUser(req, env);
       if (!user) return err('Unauthorized', 401);
@@ -478,6 +549,26 @@ export default {
         now,
         now,
       ).run();
+
+      if (task.assignee && task.assignee !== 'both' && task.assignee !== user.id) {
+        const recipient = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE id=?')
+          .bind(task.assignee)
+          .first<UserRow>();
+        if (recipient) {
+          await createNotifications(env, [recipient], {
+            actor_id: user.id,
+            actor_name: user.display_name,
+            actor_avatar_url: user.avatar_url,
+            event_type: 'task_assigned',
+            title: 'Нова призначена задача',
+            body: `${user.display_name} призначив(-ла) вам задачу: ${task.title}`,
+            entity_id: id,
+            entity_type: 'task',
+            link: `/tasks?taskId=${id}`,
+          });
+        }
+      }
+
       return json({
         id,
         user_id: user.id,
@@ -584,6 +675,25 @@ export default {
       await env.DB.prepare('INSERT INTO shopping_lists (id,user_id,title,type,category,access,pinned,created_at) VALUES (?,?,?,?,?,?,?,?)')
         .bind(id, user.id, list.title, list.type || 'daily', list.category || 'Дім', list.access || 'shared', list.pinned ? 1 : 0, now)
         .run();
+
+      if ((list.access || 'shared') === 'shared') {
+        const household = await listHouseholdUsers(env);
+        const recipients = household.filter((person) => person.id !== user.id);
+        if (recipients.length) {
+          await createNotifications(env, recipients, {
+            actor_id: user.id,
+            actor_name: user.display_name,
+            actor_avatar_url: user.avatar_url,
+            event_type: 'shared_list_created',
+            title: 'Новий спільний список',
+            body: `${user.display_name} створив(-ла) список: ${list.title}`,
+            entity_id: id,
+            entity_type: 'list',
+            link: `/shopping?listId=${id}`,
+          });
+        }
+      }
+
       return json({ id, user_id: user.id, user_display_name: user.display_name, ...list, created_at: now, items: [], pinned: !!list.pinned });
     }
 
