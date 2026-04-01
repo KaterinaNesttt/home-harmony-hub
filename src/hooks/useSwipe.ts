@@ -7,7 +7,7 @@ interface UseSwipeOptions {
 }
 
 export function useSwipe({
-  threshold = 210,
+  threshold = 310,
   onSwipeLeft,
   onSwipeRight,
 }: UseSwipeOptions) {

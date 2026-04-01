@@ -1,4 +1,4 @@
-import { Pin, Clock, User, Users, ChevronRight, AlertCircle, Trash2, Check, RotateCcw } from 'lucide-react';
+import { Pin, Clock, User, Users, ChevronRight, AlertCircle, Check, RotateCcw } from 'lucide-react';
 import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
 import type { Task } from '@/types';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,6 @@ interface TaskCardProps {
   currentUserId?: string;
   householdUsers?: CFHouseholdUser[];
   onToggleDone?: () => void;
-  onDelete?: () => void;
   onClick?: () => void;
 }
 
@@ -41,7 +40,7 @@ function getAssigneeLabel(task: Task, currentUserId?: string, householdUsers: CF
   return householdUsers.find(person => person.id === task.assignee)?.display_name || 'Виконавець';
 }
 
-export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDone, onDelete, onClick }: TaskCardProps) {
+export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDone, onClick }: TaskCardProps) {
   const isDone = task.status === 'done';
   const deadline = task.deadline ? new Date(task.deadline) : null;
   const isOverdue = deadline && deadline < new Date() && !isDone;
@@ -49,29 +48,15 @@ export function TaskCard({ task, currentUserId, householdUsers = [], onToggleDon
   const assigneeLabel = getAssigneeLabel(task, currentUserId, householdUsers);
 
   const { offset, released, elRef, handlers } = useSwipe({
-    threshold: 120,
-    onSwipeLeft: onDelete,
     onSwipeRight: onToggleDone,
   });
 
   const absOffset = Math.abs(offset);
-  const isLeft = offset < 0;
   const isRight = offset > 0;
   const actionVisible = absOffset > 20;
 
   return (
     <div className="relative rounded-2xl overflow-hidden animate-fade-in">
-      {/* Delete zone (red) — right side, swipe left */}
-      <div
-        className="absolute inset-0 flex items-center justify-end pr-5"
-        style={{
-          background: `rgba(239,68,68,${isLeft && actionVisible ? Math.min(absOffset / 120, 1) * 0.85 : 0})`,
-          transition: released ? 'background 0.3s' : 'none',
-        }}
-      >
-        <Trash2 className={cn('w-6 h-6 text-white transition-opacity', isLeft && actionVisible ? 'opacity-100' : 'opacity-0')} />
-      </div>
-
       {/* Done / Undo zone — swipe right */}
       <div
         className="absolute inset-0 flex items-center justify-start pl-5"
