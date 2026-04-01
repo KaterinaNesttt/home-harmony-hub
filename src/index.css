@@ -186,6 +186,12 @@
     min-height: 100dvh;
   }
 
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
   /* Animated background orbs */
   body::before {
     content: '';
