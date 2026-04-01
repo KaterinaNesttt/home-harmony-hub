@@ -44,8 +44,6 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
       setShowExtra(false); setNewTitle('');
       setShowSuggestions(false);
       setSuggestions(getSuggestions(''));
-      pendingItem.current = null;
-      pendingListTitle.current = '';
     }
   }, [open]);
 
@@ -102,10 +100,12 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
       onClick={onClose}
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))' }}
     >
       <div
-        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[92vh] overflow-y-auto"
+        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[92dvh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
+        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(keyboard-inset-height, 0px) - 16px)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">

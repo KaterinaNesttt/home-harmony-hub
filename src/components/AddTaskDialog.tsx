@@ -49,8 +49,16 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm" onClick={onClose}>
-      <div className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      onClick={onClose}
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + env(keyboard-inset-height, 0px))' }}
+    >
+      <div
+        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(keyboard-inset-height, 0px) - 16px)' }}
+      >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 btn-gold rounded-2xl flex items-center justify-center shadow-gold">

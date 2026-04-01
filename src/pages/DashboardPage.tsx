@@ -1,4 +1,4 @@
-import { Plus, CheckSquare, ShoppingCart, CloudSun, TrendingUp } from 'lucide-react';
+import { Plus, CheckSquare, ShoppingCart, CloudSun } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import { ShoppingListCard } from '@/components/ShoppingListCard';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -12,11 +12,9 @@ interface DashboardPageProps {
   currentUserId: string;
   householdUsers: CFHouseholdUser[];
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
-  onDeleteTask: (id: string) => void;
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
-  onDeleteList: (listId: string) => void;
   onArchiveList: (listId: string) => void;
   onUnarchiveList: (listId: string) => void;
   onAddTask: () => void;
@@ -26,7 +24,7 @@ interface DashboardPageProps {
   onGoToWeather: () => void;
 }
 
-export function DashboardPage({ tasks, lists, profile, currentUserId, householdUsers, onUpdateTask, onDeleteTask, onToggleItem, onDeleteItem, onAddItem, onDeleteList, onArchiveList, onUnarchiveList, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
+export function DashboardPage({ tasks, lists, profile, currentUserId, householdUsers, onUpdateTask, onToggleItem, onDeleteItem, onAddItem, onArchiveList, onUnarchiveList, onAddTask, onAddToList, onGoToTasks, onGoToShopping, onGoToWeather }: DashboardPageProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -42,8 +40,6 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
   const pinnedTasks = tasks.filter(t => t.pinned && t.status !== 'done');
   const displayTasks = [...new Map([...pinnedTasks, ...todayTasks].map(t => [t.id, t])).values()].slice(0, 5);
   const activeLists = lists.filter(l => !l.archived && (l.type === 'daily' || l.pinned)).slice(0, 2);
-  const toBuyCount = lists.reduce((s, l) => s + l.items.filter(i => !i.bought).length, 0);
-  const doneToday = tasks.filter(t => t.status === 'done').length;
 
   const initials = (profile?.display_name || '?').slice(0, 2).toUpperCase();
 
@@ -54,7 +50,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
     <div className="space-y-6 animate-fade-in">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between min-h-[88px]">
         <div className="flex items-center gap-4">
           <div className="relative">
             <Avatar className="w-14 h-14 ring-2 ring-primary/30 ring-offset-2 ring-offset-background shadow-gold">
@@ -69,10 +65,10 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
           </div>
         </div>
         <div className="text-right">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-lg font-bold text-foreground">
             {today.toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' })}
           </p>
-          <p className="text-xs text-muted-foreground capitalize">
+          <p className="text-sm text-muted-foreground capitalize">
             {today.toLocaleDateString('uk-UA', { weekday: 'long' })}
           </p>
         </div>
@@ -87,8 +83,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
           <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center mx-auto mb-2">
             <CheckSquare className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-2xl font-bold font-display text-gold">{todayTasks.length}</p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Сьогодні</p>
+          <p className="text-xs text-muted-foreground font-medium mt-0.5">Задачі на сьогодні</p>
         </button>
 
         <button
@@ -98,8 +93,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
           <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center mx-auto mb-2">
             <ShoppingCart className="w-5 h-5 text-accent" />
           </div>
-          <p className="text-2xl font-bold font-display text-accent">{toBuyCount}</p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Купити</p>
+          <p className="text-xs text-muted-foreground font-medium mt-0.5">Списки покупок</p>
         </button>
 
         <button
@@ -109,8 +103,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
           <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center mx-auto mb-2">
             <CloudSun className="w-5 h-5 text-green-500" />
           </div>
-          <p className="text-2xl font-bold font-display text-green-500">{doneToday}</p>
-          <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Виконано</p>
+          <p className="text-xs text-muted-foreground font-medium mt-0.5">Погода</p>
         </button>
       </div>
 
@@ -145,7 +138,7 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
                 currentUserId={currentUserId}
                 householdUsers={householdUsers}
                 onToggleDone={() => onUpdateTask(task.id, { status: task.status === 'done' ? 'unseen' : 'done' })}
-                onDelete={() => onDeleteTask(task.id)} />
+              />
             ))}
           </div>
         </section>
@@ -164,7 +157,6 @@ export function DashboardPage({ tasks, lists, profile, currentUserId, householdU
                 onToggleItem={itemId => onToggleItem(list.id, itemId)}
                 onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
                 onAddItem={item => onAddItem(list.id, item)}
-                onDelete={() => onDeleteList(list.id)}
                 onArchive={() => onArchiveList(list.id)}
                 onUnarchive={() => onUnarchiveList(list.id)} />
             ))}
