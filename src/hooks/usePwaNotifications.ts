@@ -13,7 +13,7 @@ async function showViaServiceWorker(title: string, options: NotificationOptions 
 }
 
 export function usePwaNotifications(enabled: boolean) {
-  const lastSeenRef = useRef<string>(new Date(0).toISOString());
+  const lastSeenRef = useRef<string>(new Date().toISOString());
 
   useEffect(() => {
     if (!enabled || !('Notification' in window)) return;
@@ -23,8 +23,9 @@ export function usePwaNotifications(enabled: boolean) {
 
     const ensurePermission = async () => {
       if (Notification.permission === 'default') {
-        await Notification.requestPermission();
+        return Notification.requestPermission();
       }
+      return Notification.permission;
     };
 
     const pullNotifications = async () => {
@@ -43,7 +44,8 @@ export function usePwaNotifications(enabled: boolean) {
       await cfNotifications.markAllRead();
     };
 
-    ensurePermission().then(() => {
+    ensurePermission().then((permission) => {
+      if (permission !== 'granted') return;
       pullNotifications();
       timer = window.setInterval(pullNotifications, 25_000);
     });
