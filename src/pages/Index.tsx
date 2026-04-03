@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import bgVideo from '@/assets/0331.mp4';
 import { BottomNav } from '@/components/BottomNav';
 import { AddTaskDialog } from '@/components/AddTaskDialog';
@@ -19,7 +20,14 @@ import type { ShoppingList } from '@/types';
 export type Tab = 'dashboard' | 'tasks' | 'shopping' | 'search' | 'weather' | 'account';
 
 const Index = () => {
-  const [tab, setTab] = useState<Tab>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = useMemo(() => {
+    const urlTab = searchParams.get('tab');
+    const allowedTabs: Tab[] = ['dashboard', 'tasks', 'shopping', 'search', 'weather', 'account'];
+    return allowedTabs.includes(urlTab as Tab) ? (urlTab as Tab) : 'dashboard';
+  }, [searchParams]);
+
+  const [tab, setTab] = useState<Tab>(tabFromUrl);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showAddList, setShowAddList] = useState(false);
   const [showAddToList, setShowAddToList] = useState(false);
@@ -40,7 +48,20 @@ const Index = () => {
     saveOutfit,
   } = useWardrobeStore(!!user);
 
-  const changeTab = (t: Tab) => setTab(t);
+  useEffect(() => {
+    setTab(tabFromUrl);
+  }, [tabFromUrl]);
+
+  const changeTab = (t: Tab) => {
+    setTab(t);
+    const next = new URLSearchParams(searchParams);
+    if (t === 'dashboard') {
+      next.delete('tab');
+    } else {
+      next.set('tab', t);
+    }
+    setSearchParams(next, { replace: true });
+  };
 
   // addList wrapper that returns the new list id for AddToListDialog
   const addListAndReturn = async (list: Omit<ShoppingList, 'id' | 'createdAt' | 'items'>): Promise<string> => {

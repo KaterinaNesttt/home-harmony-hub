@@ -564,7 +564,7 @@ export default {
             body: `${user.display_name} призначив(-ла) вам задачу: ${task.title}`,
             entity_id: id,
             entity_type: 'task',
-            link: `/tasks?taskId=${id}`,
+            link: `/?tab=tasks&taskId=${id}`,
           });
         }
       }
@@ -689,7 +689,7 @@ export default {
             body: `${user.display_name} створив(-ла) список: ${list.title}`,
             entity_id: id,
             entity_type: 'list',
-            link: `/shopping?listId=${id}`,
+            link: `/?tab=shopping&listId=${id}`,
           });
         }
       }
