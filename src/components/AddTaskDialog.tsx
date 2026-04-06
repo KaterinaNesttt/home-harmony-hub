@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
@@ -21,10 +21,24 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
   const [category, setCategory] = useState<Category>('Дім');
   const [access, setAccess] = useState<AccessType>('shared');
   const [deadline, setDeadline] = useState('');
+  const [assigneeQuery, setAssigneeQuery] = useState('');
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setAssignee(currentUserId);
   }, [currentUserId, open]);
+
+  useEffect(() => {
+    if (!open || !window.visualViewport) return;
+    const updateKeyboardOffset = () => {
+      const offset = Math.max(0, window.innerHeight - window.visualViewport!.height);
+      setKeyboardOffset(offset);
+    };
+    updateKeyboardOffset();
+    window.visualViewport.addEventListener('resize', updateKeyboardOffset);
+    return () => window.visualViewport?.removeEventListener('resize', updateKeyboardOffset);
+  }, [open]);
 
   if (!open) return null;
 
@@ -45,12 +59,39 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
     setDescription('');
     setDeadline('');
     setAssignee(currentUserId);
+    setAssigneeQuery('');
     onClose();
   };
 
+  const filteredUsers = householdUsers.filter((person) => {
+    const query = assigneeQuery.trim().toLowerCase();
+    if (!query) return true;
+    return person.display_name.toLowerCase().includes(query) || person.email.toLowerCase().includes(query);
+  });
+
+  const scrollFocusedFieldIntoView = () => {
+    const active = document.activeElement as HTMLElement | null;
+    if (!active || !modalRef.current?.contains(active)) return;
+    window.setTimeout(() => {
+      active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 220);
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm" onClick={onClose}>
-      <div className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      onClick={onClose}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+      }}
+    >
+      <div
+        ref={modalRef}
+        className="glass-strong w-full max-w-md rounded-3xl p-6 animate-slide-up max-h-[90dvh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        style={{ maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - ${keyboardOffset}px - 16px)` }}
+      >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 btn-gold rounded-2xl flex items-center justify-center shadow-gold">
@@ -75,6 +116,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             placeholder="Опис (опціонально)"
             value={description}
             onChange={e => setDescription(e.target.value)}
+            onFocus={scrollFocusedFieldIntoView}
             rows={2}
             className="w-full px-4 py-3 glass rounded-2xl text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all border border-border/50 resize-none"
           />
@@ -85,6 +127,7 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
               type="datetime-local"
               value={deadline}
               onChange={e => setDeadline(e.target.value)}
+              onFocus={scrollFocusedFieldIntoView}
               className="w-full h-12 px-4 glass rounded-2xl text-sm focus:outline-none focus:border-primary/50 transition-all border border-border/50"
             />
           </div>
@@ -111,9 +154,24 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {householdUsers.map(person => (
+                  <div className="px-2 pb-2">
+                    <input
+                      value={assigneeQuery}
+                      onChange={e => setAssigneeQuery(e.target.value)}
+                      placeholder="Пошук по імені або email"
+                      className="h-9 w-full rounded-md border border-border/60 bg-transparent px-2 text-sm"
+                    />
+                  </div>
+                  {filteredUsers.map(person => (
                     <SelectItem key={person.id} value={person.id}>
-                      {person.id === currentUserId ? '👤 Я' : '👥'} {person.display_name}
+                      <span className="inline-flex items-center gap-2">
+                        <img
+                          src={person.avatar_url || '/placeholder.svg'}
+                          alt={person.display_name}
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                        <span>{person.id === currentUserId ? '👤 Я' : person.display_name}</span>
+                      </span>
                     </SelectItem>
                   ))}
                   <SelectItem value="both">🤝 Обоє</SelectItem>

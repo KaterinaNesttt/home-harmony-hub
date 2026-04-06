@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Trash2, ExternalLink, Plus, Pin, ChevronDown, ChevronUp, Sparkles, Archive, ArchiveRestore } from 'lucide-react';
+import { Check, Trash2, ExternalLink, Plus, Pin, ChevronDown, ChevronUp, Sparkles, Archive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ShoppingItem, ShoppingList } from '@/types';
 import { useFrequentItems } from '@/hooks/useFrequentItems';
@@ -12,12 +12,11 @@ interface ShoppingListCardProps {
   onToggleItem: (itemId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onAddItem: (item: Omit<ShoppingItem, 'id'>) => void;
-  onDelete?: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
 }
 
-export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem, onDelete, onArchive, onUnarchive }: ShoppingListCardProps) {
+export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem, onArchive, onUnarchive }: ShoppingListCardProps) {
   const [newItem, setNewItem] = useState('');
   const [newQty, setNewQty] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -28,13 +27,10 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem, 
   const { recordItem, getSuggestions } = useFrequentItems();
 
   const { offset, released, elRef, handlers } = useSwipe({
-    threshold: 120,
-    onSwipeLeft: onDelete,
     onSwipeRight: list.archived ? onUnarchive : onArchive,
   });
 
   const absOffset = Math.abs(offset);
-  const isLeft = offset < 0;
   const isRight = offset > 0;
   const actionVisible = absOffset > 20;
 
@@ -60,17 +56,6 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem, 
 
   return (
     <div className="relative rounded-2xl overflow-hidden animate-fade-in">
-      {/* Delete zone (red) — swipe left */}
-      <div
-        className="absolute inset-0 flex items-center justify-end pr-5"
-        style={{
-          background: `rgba(239,68,68,${isLeft && actionVisible ? Math.min(absOffset / 120, 1) * 0.85 : 0})`,
-          transition: released ? 'background 0.3s' : 'none',
-        }}
-      >
-        <Trash2 className={cn('w-6 h-6 text-white transition-opacity', isLeft && actionVisible ? 'opacity-100' : 'opacity-0')} />
-      </div>
-
       {/* Archive / Unarchive zone — swipe right */}
       <div
         className="absolute inset-0 flex items-center justify-start pl-5"
@@ -108,9 +93,6 @@ export function ShoppingListCard({ list, onToggleItem, onDeleteItem, onAddItem, 
               {list.createdByName && <p className="text-xs text-muted-foreground mt-1">{`Додала: ${list.createdByName}`}</p>}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
-                {boughtCount}/{list.items.length}
-              </span>
               {collapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
             </div>
           </div>

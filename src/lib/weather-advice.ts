@@ -30,6 +30,8 @@ export interface Advice {
 
 const MORNING_HOURS = ['07:00', '08:00'];
 const EVENING_HOURS = ['17:00', '18:00'];
+const DAY_HOURS = ['12:00', '13:00'];
+const NIGHT_HOURS = ['00:00', '01:00'];
 
 function uniquePush(target: string[], ...items: Array<string | false | null | undefined>) {
   for (const item of items) {
@@ -65,10 +67,31 @@ function isSummerMonth(date = new Date()) {
   return month >= 5 && month <= 8;
 }
 
-export function getMorningHint(weather: AdviceWeatherInput) {
+function getDayPeriod(date = new Date()) {
+  const hour = date.getHours();
+  if (hour >= 6 && hour <= 11) return 'morning';
+  if (hour >= 12 && hour <= 17) return 'day';
+  if (hour >= 18 && hour <= 23) return 'evening';
+  return 'night';
+}
+
+export function getMorningHint(weather: AdviceWeatherInput, date = new Date()) {
   const morning = pickHourBlock(weather.hourly, MORNING_HOURS, weather.temp);
+  const day = pickHourBlock(weather.hourly, DAY_HOURS, weather.temp);
   const evening = pickHourBlock(weather.hourly, EVENING_HOURS, weather.temp);
-  return `З ранку ${morning.min >= 0 ? '+' : ''}${morning.min}°C, надалі до ${evening.max >= 0 ? '+' : ''}${evening.max}°C — другий шар має легко зніматися.`;
+  const night = pickHourBlock(weather.hourly, NIGHT_HOURS, weather.temp);
+  const period = getDayPeriod(date);
+
+  if (period === 'morning') {
+    return `Вранці ${morning.min >= 0 ? '+' : ''}${morning.min}°C, вдень до ${day.max >= 0 ? '+' : ''}${day.max}°C — беріть шар, який легко зняти.`;
+  }
+  if (period === 'day') {
+    return `Вдень близько ${day.max >= 0 ? '+' : ''}${day.max}°C, увечері ${evening.min >= 0 ? '+' : ''}${evening.min}°C — зручний другий шар буде доречним.`;
+  }
+  if (period === 'evening') {
+    return `Увечері ${evening.max >= 0 ? '+' : ''}${evening.max}°C, вночі до ${night.min >= 0 ? '+' : ''}${night.min}°C — краще взяти тепліший верхній шар.`;
+  }
+  return `Вночі ${night.min >= 0 ? '+' : ''}${night.min}°C, зранку ${morning.max >= 0 ? '+' : ''}${morning.max}°C — обирайте комфортні теплі шари.`;
 }
 
 export function getAdvice(weather: AdviceWeatherInput): Advice {

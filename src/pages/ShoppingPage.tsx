@@ -11,7 +11,6 @@ interface ShoppingPageProps {
   onToggleItem: (listId: string, itemId: string) => void;
   onDeleteItem: (listId: string, itemId: string) => void;
   onAddItem: (listId: string, item: Omit<ShoppingItem, 'id'>) => void;
-  onDeleteList: (listId: string) => void;
   onArchiveList: (listId: string) => void;
   onUnarchiveList: (listId: string) => void;
 }
@@ -23,7 +22,7 @@ const filters: { id: ListFilter; label: string; emoji: string }[] = [
   { id: 'wishlist', label: 'Хотєлки',  emoji: '💫' },
 ];
 
-export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem, onDeleteList, onArchiveList, onUnarchiveList }: ShoppingPageProps) {
+export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onAddItem, onArchiveList, onUnarchiveList }: ShoppingPageProps) {
   const [filter, setFilter] = useState<ListFilter>('daily');
 
   const filtered = (() => {
@@ -75,11 +74,6 @@ export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onA
         ))}
       </div>
 
-      {/* Hint */}
-      <p className="text-xs text-muted-foreground/60 text-center -mt-1">
-        ← свайп вліво — видалити · свайп вправо — архів
-      </p>
-
       {/* Lists */}
       <div className="space-y-3 stagger">
         {sorted.length === 0 ? (
@@ -96,7 +90,6 @@ export function ShoppingPage({ lists, onAddList, onToggleItem, onDeleteItem, onA
               onToggleItem={itemId => onToggleItem(list.id, itemId)}
               onDeleteItem={itemId => onDeleteItem(list.id, itemId)}
               onAddItem={item => onAddItem(list.id, item)}
-              onDelete={() => onDeleteList(list.id)}
               onArchive={() => onArchiveList(list.id)}
               onUnarchive={() => onUnarchiveList(list.id)}
             />

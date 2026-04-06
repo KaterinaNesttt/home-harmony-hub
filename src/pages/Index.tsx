@@ -112,9 +112,7 @@ const Index = () => {
             <DashboardPage
               tasks={tasks} lists={lists} profile={profile} currentUserId={user.id} householdUsers={householdUsers}
               onUpdateTask={updateTask}
-              onDeleteTask={deleteTask}
               onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
-              onDeleteList={deleteList}
               onArchiveList={archiveList}
               onUnarchiveList={unarchiveList}
               onAddTask={() => setShowAddTask(true)}
@@ -125,14 +123,13 @@ const Index = () => {
             />
           )}
           {tab === 'tasks' && (
-            <TasksPage tasks={tasks} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask} onDeleteTask={deleteTask}
+            <TasksPage tasks={tasks} currentUserId={user.id} householdUsers={householdUsers} onUpdateTask={updateTask}
               onAddTask={() => setShowAddTask(true)} />
           )}
           {tab === 'shopping' && (
             <ShoppingPage lists={lists}
               onAddList={() => setShowAddList(true)}
               onToggleItem={toggleItem} onDeleteItem={deleteItem} onAddItem={addItem}
-              onDeleteList={deleteList}
               onArchiveList={archiveList}
               onUnarchiveList={unarchiveList} />
           )}

@@ -44,8 +44,8 @@ describe('weather advice', () => {
         { time: '17:00', temp: 14, apparent_temp: 13, code: 801, precipitation_probability: 0 },
         { time: '18:00', temp: 13, apparent_temp: 12, code: 801, precipitation_probability: 0 },
       ],
-    }));
+    }), new Date('2026-04-01T07:30:00'));
     expect(hint).toContain('+8');
-    expect(hint).toContain('+14');
+    expect(hint).toContain('+12');
   });
 });

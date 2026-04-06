@@ -54,6 +54,22 @@ export interface CFHouseholdUser {
   avatar_url: string | null;
 }
 
+export interface CFNotification {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  actor_name: string;
+  actor_avatar_url: string | null;
+  event_type: 'shared_list_created' | 'task_assigned';
+  title: string;
+  body: string;
+  entity_id: string;
+  entity_type: 'list' | 'task';
+  link: string;
+  read_at: string | null;
+  created_at: string;
+}
+
 export const cfAuth = {
   async signUp(email: string, password: string, display_name: string) {
     const { data, error } = await apiFetch<{ token: string; user: CFUser }>('/auth/signup', {
@@ -260,5 +276,15 @@ export const cfWardrobe = {
       method: 'POST',
       body: JSON.stringify({ item_ids: itemIds, weather_temp: weatherTemp }),
     });
+  },
+};
+
+export const cfNotifications = {
+  async list(since?: string) {
+    const query = since ? `?since=${encodeURIComponent(since)}` : '';
+    return apiFetch<CFNotification[]>(`/notifications${query}`);
+  },
+  async markAllRead() {
+    return apiFetch<{ updated: boolean }>('/notifications/read-all', { method: 'POST' });
   },
 };

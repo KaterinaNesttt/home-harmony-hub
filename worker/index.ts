@@ -17,6 +17,22 @@ type UserRow = {
   avatar_url: string | null;
 };
 
+type NotificationRow = {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  actor_name: string;
+  actor_avatar_url: string | null;
+  event_type: 'shared_list_created' | 'task_assigned';
+  title: string;
+  body: string;
+  entity_id: string;
+  entity_type: 'list' | 'task';
+  link: string;
+  read_at: string | null;
+  created_at: string;
+};
+
 type AccessControlledRow = {
   id: string;
   user_id: string;
