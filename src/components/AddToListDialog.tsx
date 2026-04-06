@@ -202,7 +202,6 @@ export function AddToListDialog({ open, onClose, lists, onAddItem, onAddList }: 
                 onFocus={() => { setShowSuggestions(true); setSuggestions(getSuggestions(name)); }}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-                autoFocus={mode === 'existing'}
                 className="w-full h-12 px-4 glass rounded-xl text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
               />
 

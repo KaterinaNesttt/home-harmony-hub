@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { ShoppingList, Category, AccessType, ShoppingListType } from '@/types';
@@ -15,6 +15,27 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
   const [type, setType] = useState<ShoppingListType>('daily');
   const [category, setCategory] = useState<Category>('Дім');
   const [access, setAccess] = useState<AccessType>('shared');
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    if (!open || !window.visualViewport) {
+      setKeyboardOffset(0);
+      return;
+    }
+
+    const update = () => {
+      const offset = Math.max(0, window.innerHeight - window.visualViewport!.height);
+      setKeyboardOffset(offset);
+    };
+
+    update();
+    window.visualViewport.addEventListener('resize', update);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', update);
+      setKeyboardOffset(0);
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -26,9 +47,19 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm" onClick={onClose}>
-      <div className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/50 animate-fade-in backdrop-blur-sm"
+      onClick={onClose}
+      style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+        paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)`,
+      }}
+    >
+      <div
+        className="glass-strong w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        style={{ maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - ${keyboardOffset}px - 16px)` }}
+      >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-accent/20 border border-accent/30 rounded-2xl flex items-center justify-center text-xl">
@@ -46,7 +77,6 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
             placeholder="Назва списку"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            autoFocus
             className="w-full h-14 px-4 glass rounded-2xl text-base font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 transition-all border border-border/50"
           />
 
@@ -60,7 +90,7 @@ export function AddListDialog({ open, onClose, onAdd }: AddListDialogProps) {
                 <SelectContent>
                   <SelectItem value="daily">📅 Сьогодні</SelectItem>
                   <SelectItem value="global">📦 Майбутні</SelectItem>
-                  <SelectItem value="wishlist">💫 Хотєлки</SelectItem>
+                  <SelectItem value="wishlist">💫 Хотілки</SelectItem>
                 </SelectContent>
               </Select>
             </div>

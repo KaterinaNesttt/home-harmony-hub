@@ -68,7 +68,6 @@ export function AddTaskDialog({ open, onClose, onAdd, currentUserId, householdUs
             placeholder="Назва задачі"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            autoFocus
             className="w-full h-14 px-4 glass rounded-2xl text-base font-semibold placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all border border-border/50"
           />
 
