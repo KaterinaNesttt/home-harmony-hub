@@ -590,20 +590,24 @@ export default {
         now,
         now,
       ).run();
-      const household = await listHouseholdUsers(env);
-      const recipients = household.filter((person) => person.id !== user.id);
-      if (recipients.length) {
-        await createNotifications(env, recipients, {
-          actor_id: user.id,
-          actor_name: user.display_name,
-          actor_avatar_url: user.avatar_url,
-          event_type: 'task_assigned',
-          title: 'РќРѕРІР° Р·Р°РґР°С‡Р°',
-          body: `${user.display_name} РґРѕРґР°РІ(-Р»Р°) Р·Р°РґР°С‡Сѓ: ${task.title}`,
-          entity_id: id,
-          entity_type: 'task',
-          link: `/tasks?taskId=${id}`,
-        });
+
+      if (task.assignee && task.assignee !== 'both' && task.assignee !== user.id) {
+        const recipient = await env.DB.prepare('SELECT id, email, display_name, avatar_url FROM users WHERE id=?')
+          .bind(task.assignee)
+          .first<UserRow>();
+        if (recipient) {
+          await createNotifications(env, [recipient], {
+            actor_id: user.id,
+            actor_name: user.display_name,
+            actor_avatar_url: user.avatar_url,
+            event_type: 'task_assigned',
+            title: 'Нова призначена задача',
+            body: `${user.display_name} призначив(-ла) вам задачу: ${task.title}`,
+            entity_id: id,
+            entity_type: 'task',
+            link: `/?tab=tasks&taskId=${id}`,
+          });
+        }
       }
       return json({
         id,
@@ -723,8 +727,8 @@ export default {
             title: 'РќРѕРІРёР№ СЃРїРёСЃРѕРє',
             body: `${user.display_name} СЃС‚РІРѕСЂРёРІ(-Р»Р°) СЃРїРёСЃРѕРє: ${list.title}`,
             entity_id: id,
-            entity_type: 'shopping_list',
-            link: `/shopping?listId=${id}`,
+            entity_type: 'list',
+            link: `/?tab=shopping&listId=${id}`,
           });
         }
       }
