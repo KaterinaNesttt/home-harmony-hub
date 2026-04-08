@@ -34,8 +34,8 @@ const Index = () => {
 
   const { user, profile, householdUsers, loading, signUp, signIn, signOut, updateProfile, uploadAvatar } = useAuth();
   usePwaNotifications(!!user);
-  const { tasks, addTask, updateTask } = useTaskStore(!!user);
-  const { lists, addList, addItem, toggleItem, deleteItem, archiveList, unarchiveList } = useShoppingStore(!!user);
+  const { tasks, addTask, updateTask, deleteTask } = useTaskStore(!!user);
+  const { lists, addList, addItem, toggleItem, deleteItem, deleteList, archiveList, unarchiveList } = useShoppingStore(!!user);
   const {
     items: wardrobeItems,
     loading: wardrobeLoading,

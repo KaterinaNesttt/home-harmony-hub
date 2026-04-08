@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Search as SearchIcon, X } from 'lucide-react';
 import { TaskCard } from '@/components/TaskCard';
 import type { CFHouseholdUser } from '@/integrations/cloudflare/client';
@@ -14,7 +14,13 @@ interface SearchPageProps {
 
 export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpdateTask }: SearchPageProps) {
   const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const q = query.toLowerCase().trim();
+
+  useEffect(() => {
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (!isIOS) inputRef.current?.focus();
+  }, []);
 
   const matchedTasks = q ? tasks.filter(t =>
     t.title.toLowerCase().includes(q) ||
@@ -29,20 +35,19 @@ export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpda
 
   const total = matchedTasks.length + matchedLists.length;
 
-  const suggestions = ['Дім', 'Фінанси', 'Їжа', 'Робота', 'Здоров\'я'];
+  const suggestions = ['Дім', 'Фінанси', 'Їжа', 'Робота', "Здоров'я"];
 
   return (
     <div className="space-y-5 animate-fade-in">
       <h1 className="text-2xl font-bold font-display">Пошук</h1>
 
-      {/* Search input */}
       <div className="relative">
         <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
         <input
+          ref={inputRef}
           placeholder="Задачі, списки, товари..."
           value={query}
           onChange={e => setQuery(e.target.value)}
-          autoFocus
           className="w-full h-14 pl-12 pr-12 glass rounded-2xl text-base font-medium placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-all border border-border/50"
         />
         {query && (
@@ -55,7 +60,6 @@ export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpda
         )}
       </div>
 
-      {/* Suggestions (empty state) */}
       {!q && (
         <div className="animate-slide-up">
           <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-3">Категорії</p>
@@ -79,7 +83,6 @@ export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpda
         </div>
       )}
 
-      {/* No results */}
       {q && total === 0 && (
         <div className="glass rounded-2xl p-12 text-center animate-scale-in">
           <div className="text-4xl mb-3">😕</div>
@@ -88,7 +91,6 @@ export function SearchPage({ tasks, lists, currentUserId, householdUsers, onUpda
         </div>
       )}
 
-      {/* Results */}
       {q && total > 0 && (
         <p className="text-sm text-muted-foreground">
           Знайдено: <span className="font-bold text-gold">{total}</span>

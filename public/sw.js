@@ -1,5 +1,5 @@
-self.addEventListener('install', () => {
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -8,15 +8,29 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+
   const targetUrl = event.notification?.data?.url || '/';
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      const existing = clients.find((client) => 'focus' in client);
-      if (existing) {
-        existing.focus();
-        return existing.navigate(targetUrl);
+
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+    for (const client of clientList) {
+      if ('focus' in client) {
+        if (client.url.includes(targetUrl)) {
+          await client.focus();
+          return;
+        }
+
+        if ('navigate' in client) {
+          await client.navigate(targetUrl);
+          await client.focus();
+          return;
+        }
       }
-      return self.clients.openWindow(targetUrl);
-    }),
-  );
+    }
+
+    if (self.clients.openWindow) {
+      await self.clients.openWindow(targetUrl);
+    }
+  })());
 });

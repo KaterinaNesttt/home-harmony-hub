@@ -1,25 +1,19 @@
 import { useEffect, useRef } from 'react';
-import { cfNotifications } from '@/integrations/cloudflare/client';
-
-async function showViaServiceWorker(title: string, options: NotificationOptions & { url: string }) {
-  if (!('serviceWorker' in navigator) || Notification.permission !== 'granted') return;
-  const registration = await navigator.serviceWorker.ready;
-  await registration.showNotification(title, {
-    ...options,
-    data: { url: options.url },
-    badge: '/icon-192.png',
-    icon: '/icon-192.png',
-  });
-}
+import { toast } from 'sonner';
 
 export function usePwaNotifications(enabled: boolean) {
   const lastSeenRef = useRef<string>(new Date().toISOString());
 
-  useEffect(() => {
-    if (!enabled || !('Notification' in window)) return;
+type NotificationItem = {
+  id?: string;
+  title: string;
+  body: string;
+  link?: string;
+};
 
-    let active = true;
-    let timer: number | null = null;
+export function usePwaNotifications(authenticated: boolean) {
+  const lastCheckedRef = useRef<string>(new Date().toISOString());
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const ensurePermission = async () => {
       if (Notification.permission === 'default') {
@@ -28,20 +22,35 @@ export function usePwaNotifications(enabled: boolean) {
       return Notification.permission;
     };
 
-    const pullNotifications = async () => {
-      const { data } = await cfNotifications.list(lastSeenRef.current);
-      if (!active || !data?.length) return;
-      const newest = data[0]?.created_at;
-      if (newest) lastSeenRef.current = newest;
+    const poll = async () => {
+      try {
+        const token = localStorage.getItem('hhh_token');
+        if (!token) return;
 
-      const ordered = [...data].reverse();
-      for (const item of ordered) {
-        await showViaServiceWorker(item.title, {
-          body: item.body,
-          url: item.link,
+        const since = lastCheckedRef.current;
+        const response = await fetch(`/api/notifications?since=${encodeURIComponent(since)}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
+
+        if (!response.ok) return;
+
+        const items = (await response.json()) as NotificationItem[];
+        lastCheckedRef.current = new Date().toISOString();
+
+        for (const item of items) {
+          if (hasNotificationApi && Notification.permission === 'granted') {
+            showBrowserNotification(item);
+          } else {
+            toast(item.title, {
+              description: item.body,
+            });
+          }
+        }
+      } catch {
+        // Ignore transient polling failures.
       }
-      await cfNotifications.markAllRead();
     };
 
     ensurePermission().then((permission) => {
@@ -51,8 +60,10 @@ export function usePwaNotifications(enabled: boolean) {
     });
 
     return () => {
-      active = false;
-      if (timer) window.clearInterval(timer);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [enabled]);
+  }, [authenticated]);
 }
