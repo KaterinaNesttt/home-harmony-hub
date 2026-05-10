@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
-const POLL_INTERVAL = 30_000;
+export function usePwaNotifications(enabled: boolean) {
+  const lastSeenRef = useRef<string>(new Date().toISOString());
 
 type NotificationItem = {
   id?: string;
@@ -14,36 +15,11 @@ export function usePwaNotifications(authenticated: boolean) {
   const lastCheckedRef = useRef<string>(new Date().toISOString());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (!authenticated) {
-      lastCheckedRef.current = new Date().toISOString();
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+    const ensurePermission = async () => {
+      if (Notification.permission === 'default') {
+        return Notification.requestPermission();
       }
-      return;
-    }
-
-    const hasNotificationApi = typeof window !== 'undefined' && 'Notification' in window;
-
-    if (hasNotificationApi && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-
-    const showBrowserNotification = (item: NotificationItem) => {
-      const notification = new Notification(item.title, {
-        body: item.body,
-        icon: '/icon-512.png',
-        data: { url: item.link },
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        if (item.link) {
-          window.location.href = item.link;
-        }
-        notification.close();
-      };
+      return Notification.permission;
     };
 
     const poll = async () => {
@@ -77,8 +53,11 @@ export function usePwaNotifications(authenticated: boolean) {
       }
     };
 
-    poll();
-    timerRef.current = setInterval(poll, POLL_INTERVAL);
+    ensurePermission().then((permission) => {
+      if (permission !== 'granted') return;
+      pullNotifications();
+      timer = window.setInterval(pullNotifications, 25_000);
+    });
 
     return () => {
       if (timerRef.current) {
